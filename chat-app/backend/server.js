@@ -9,6 +9,7 @@ const socketIo = require("socket.io");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 const authRoutes = require("./routes/auth"); // Authentication routes
+const allowedOrigin = "https://chat-app-chl1.vercel.app";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -42,7 +43,7 @@ const authenticateSocket = (socket, next) => {
 //use this middleware when initializing socket.io
 const io = socketIo(server, {
   cors: {
-    origin: "chat-app-chl1.vercel.app", // frontend origin
+    origin: allowedOrigin, // frontend origin
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -51,7 +52,7 @@ const io = socketIo(server, {
 // Middleware: Enable CORS and parse JSON request bodies
 app.use(
   cors({
-    origin: "chat-app-chl1.vercel.app", // or whatever your frontend runs on
+    origin: allowedOrigin, // or whatever your frontend runs on
     credentials: true,
   })
 );
