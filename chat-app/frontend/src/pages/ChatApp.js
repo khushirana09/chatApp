@@ -5,7 +5,9 @@ import { useNavigate } from "react-router-dom";
 // Socket connection setup
 const token = localStorage.getItem("token");
 const socket = io("https://chat-app-v09s.onrender.com", {
-  query: { token },
+  auth: {
+    token: userToken   // Make sure this is a real token (not null)
+  }
 });
 // automatically connnects to the same domain/port
 

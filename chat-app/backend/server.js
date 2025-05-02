@@ -40,19 +40,19 @@ const authenticateSocket = (socket, next) => {
 };
 
 //use this middleware when initializing socket.io
-const io = socketIo(server, {
+const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "chat-app-sigma-lemon.vercel.app"], // frontend origin
+    origin: "https://chat-app-sigma-lemon.vercel.app", // frontend origin
     methods: ["GET", "POST"],
-    credentials: true,
-  },
+    credentials: true
+  }
 });
 
 // Middleware: Enable CORS and parse JSON request bodies
 app.use(
   cors({
-    origin: ["http://localhost:3000", "chat-app-sigma-lemon.vercel.app"], // or whatever your frontend runs on
-    credentials: true,
+    origin:"https://chat-app-sigma-lemon.vercel.app", // or whatever your frontend runs on
+    credentials: true
   })
 );
 app.use(express.json());
