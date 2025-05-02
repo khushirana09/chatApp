@@ -3,7 +3,11 @@ import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 
 // Socket connection setup
-const socket = io(); // automatically connnects to the same domain/port
+const token = localStorage.getItem("token");
+const socket = io("http://localhost:5000", {
+  query: { token },
+});
+// automatically connnects to the same domain/port
 
 const ChatApp = () => {
   const [username, setUsername] = useState("");
@@ -75,11 +79,12 @@ const ChatApp = () => {
   //submit button
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (message) {
-      socket.emit("chatMessage", message, privateMessageTarget); // ✅ only send message text  and private message
-    } else {
-      socket.emit("chatMessage", message); //send public message
-    }
+    if (!message.trim()) return; {
+      socket.emit("chatMessage", {
+        text: message,
+        to: privateMessageTarget,
+      }); // ✅ only send message text  and private message
+    } 
     setMessage("");
   };
 
@@ -100,7 +105,11 @@ const ChatApp = () => {
         {users.map((user, index) => (
           <li key={index} onClick={() => setPrivateMessageTarget(user)}>
             {user} {privateMessageTarget}
-            {typingUser && <p><em>{typingUser} is typing...</em></p>}
+            {typingUser && (
+              <p>
+                <em>{typingUser} is typing...</em>
+              </p>
+            )}
           </li>
         ))}
       </ul>
