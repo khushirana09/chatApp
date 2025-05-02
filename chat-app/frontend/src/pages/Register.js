@@ -11,9 +11,11 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    // Check if the API URL is available
+    // Check if API URL is available
     if (!apiUrl) {
-      alert("API base URL is not defined. Please check your environment variables.");
+      alert(
+        "API base URL is not defined. Please check your environment variables."
+      );
       return;
     }
 
@@ -23,6 +25,11 @@ const Register = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password }),
       });
+
+      // Check if response is OK
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+      }
 
       const data = await response.json();
 
@@ -37,7 +44,6 @@ const Register = () => {
       alert("An error occurred during registration. Please try again.");
     }
   };
-
   return (
     <div>
       <h2>Register</h2>
