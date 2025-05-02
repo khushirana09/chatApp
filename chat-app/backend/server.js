@@ -43,7 +43,7 @@ const authenticateSocket = (socket, next) => {
 //use this middleware when initializing socket.io
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigin, // frontend origin
+    origin: ["http://localhost:3000", "https://chat-app-chl1.vercel.app"], // frontend origin
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -52,7 +52,7 @@ const io = socketIo(server, {
 // Middleware: Enable CORS and parse JSON request bodies
 app.use(
   cors({
-    origin: allowedOrigin, // or whatever your frontend runs on
+    origin: ["http://localhost:3000", "https://chat-app-chl1.vercel.app"], // or whatever your frontend runs on
     credentials: true,
   })
 );
