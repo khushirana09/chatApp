@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 const token = localStorage.getItem("token");
 const socket = io("https://chat-app-v09s.onrender.com", {
   auth: {
-    token: userToken   // Make sure this is a real token (not null)
+    token: token   // Make sure this is a real token (not null)
   }
 });
 // automatically connnects to the same domain/port
@@ -71,7 +71,7 @@ const ChatApp = () => {
 
     // Notify when the user disconnects
     return () => {
-      socket.off("chatMessages");
+      socket.off("chatMessage");
       socket.off("updateUserList");
       socket.off("chatHistory");
       socket.off("typing");

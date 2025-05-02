@@ -32,7 +32,7 @@ mongoose
 const authenticateSocket = (socket, next) => {
   const token = socket.handshake.query.token; //socket sends token as query
   if (!token) return next(new Error("Authentication error"));
-  jwt.verify(token, process.env.JWT_SECRET, (err, deocded) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) return next(new Error("Authentication error"));
     socket.user = decoded; //attact user info to socket
     next();
@@ -85,11 +85,6 @@ io.on("connection", async (socket) => {
   // listen for typing events
   socket.on("typing", (username) => {
     socket.broadcast.emit("typing", username); // notify others
-
-    // When a user sends a message
-    io.on("connection", async (socket) => {
-      console.log("✅ New client connected:", socket.id);
-    });
 
     socket.on("chatMessage", async ({ text, to }) => {
       const from = onlineUsers[socket.id];
