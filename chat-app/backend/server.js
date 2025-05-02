@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const userRoutes = require("./routes/auth");
 
 const User = require("./models/User");
 const Message = require("./models/Message");
@@ -23,6 +24,7 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/api/auth", userRoutes);
 
 // JWT Auth Middleware for Socket.IO
 const authenticateSocket = (socket, next) => {
@@ -40,17 +42,11 @@ io.use(authenticateSocket);
 
 // Database connection
 mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("✅ Connected to MongoDB Atlas");
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-  });
+  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error(err));
 
+  
 // Socket.IO connection
 io.on("connection", (socket) => {
   console.log("✅ New client connected:", socket.id);
