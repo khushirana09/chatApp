@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 // Socket connection setup
 const token = localStorage.getItem("token");
-const socket = io("http://localhost:5000", {
+const socket = io("https://chat-app-v09s.onrender.com", {
   query: { token },
 });
 // automatically connnects to the same domain/port
