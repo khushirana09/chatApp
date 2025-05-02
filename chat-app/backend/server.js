@@ -60,6 +60,7 @@ app.use(express.json());
 // Route middleware for authentication endpoints
 app.use("/api", authRoutes); // Register + Login endpoints will use /api prefix
 
+
 // Store connected users
 let onlineUsers = {}; // Example: { socketId1: 'John', socketId2: 'Alice' }
 
@@ -141,6 +142,14 @@ io.on("connection", async (socket) => {
 
 // Start the server
 const PORT = process.env.PORT || 5000;
+
+// Basic root route
+app.get("/", (req, res) => {
+  res.send("✅ Backend is running! This is the API root.");
+});
+
+
+
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
