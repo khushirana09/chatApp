@@ -5,38 +5,64 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-const userRoutes = require("./routes/auth");
 
+dotenv.config();
+
+const userRoutes = require("./routes/auth");
 const User = require("./models/User");
 const Message = require("./models/Message");
 
 const app = express();
-dotenv.config();
 const server = http.createServer(app);
 
+// ✅ FIXED CORS CONFIG
+const allowedOrigins = [
+  "https://chat-app-sigma-lemon.vercel.app",
+  "http://localhost:3000",
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl) or valid frontend origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions)); // ✅ Only one correct CORS use
+app.use(express.json());
+
+// ✅ Routes
+app.use("/api/auth", userRoutes);
+app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/messages", require("./routes/messageRoutes"));
+
+// ✅ MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB error:", err));
+
+// ✅ Setup Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: "https://chat-app-sigma-lemon.vercel.app", // your frontend URL
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
-// Middleware
-app.use(express.json());
-app.use("/api/auth", userRoutes);
-
-// Enable CORS for your frontend (Vercel domain)
-const corsOptions = {
-  origin: ["https://chat-app-sigma-lemon.vercel.app", "http://localhost:3000"], // Replace this with your frontend domain
-  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-  allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
-};
-
-app.use(cors(corsOptions)); // Use CORS with your custom options
-
-// JWT Auth Middleware for Socket.IO
-const authenticateSocket = (socket, next) => {
+// ✅ JWT Middleware for Socket.IO
+io.use((socket, next) => {
   const token = socket.handshake.query.token;
   if (!token) return next(new Error("Authentication error"));
 
@@ -45,40 +71,25 @@ const authenticateSocket = (socket, next) => {
     socket.user = decoded;
     next();
   });
-};
+});
 
-io.use(authenticateSocket);
-
-// Database connection
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error(err));
-
-// Socket.IO connection
+// ✅ Socket.IO Events
 io.on("connection", (socket) => {
-  console.log("✅ New client connected:", socket.id);
+  console.log("📡 Client connected:", socket.id);
 
-  // Set username on connect
   socket.on("setUsername", async (username) => {
     socket.username = username;
     socket.broadcast.emit("userConnected", username);
   });
 
-  // Typing indicator
   socket.on("typing", () => {
     socket.broadcast.emit("typing", socket.username);
   });
 
-  // Stop typing
   socket.on("stopTyping", () => {
     socket.broadcast.emit("stopTyping", socket.username);
   });
 
-  // Receive and broadcast message
   socket.on("chatMessage", async ({ text, to }) => {
     const message = new Message({
       text,
@@ -93,18 +104,13 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Disconnect
   socket.on("disconnect", () => {
-    console.log("🚪 Client disconnected:", socket.id);
+    console.log("❌ Client disconnected:", socket.id);
     socket.broadcast.emit("userDisconnected", socket.username);
   });
 });
 
-// Routes
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/messages", require("./routes/messageRoutes"));
-
-// Start server
+// ✅ Start the Server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
