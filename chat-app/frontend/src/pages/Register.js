@@ -6,18 +6,11 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const apiUrl = process.env.REACT_APP_API_BASE_URL; // Ensure this is set correctly
+
+  const apiUrl = import.meta.env.VITE_API_BASE_URL || process.env.REACT_APP_API_BASE_URL;
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
-    // Check if API URL is available
-    if (!apiUrl) {
-      alert(
-        "API base URL is not defined. Please check your environment variables."
-      );
-      return;
-    }
 
     try {
       const response = await fetch(`${apiUrl}/api/auth/register`, {
@@ -26,54 +19,30 @@ const Register = () => {
         body: JSON.stringify({ username, email, password }),
       });
 
-      // Check if response is OK
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-
       const data = await response.json();
 
       if (response.ok) {
-        alert("Registered successfully! Please log in.");
+        alert("Registered successfully!");
         navigate("/login");
       } else {
-        alert(data.message || "Registration failed. Please try again.");
+        alert(data.message || "Registration failed.");
       }
     } catch (error) {
       console.error("Error during registration:", error);
-      alert("An error occurred during registration. Please try again.");
+      alert("An error occurred. Please try again.");
     }
   };
+
   return (
     <div>
       <h2>Register</h2>
       <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button type="submit">Register</button>
       </form>
-      <p>
-        Already have an account? <Link to="/login">Login</Link>
-      </p>
+      <p>Already have an account? <Link to="/login">Login</Link></p>
     </div>
   );
 };

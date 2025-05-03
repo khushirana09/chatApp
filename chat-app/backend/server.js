@@ -1,67 +1,43 @@
-const dotenv = require("dotenv");
 const express = require("express");
+const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 
-dotenv.config();
-
 const userRoutes = require("./routes/auth");
+const userRoute = require("./routes/userRoutes");
+const messageRoute = require("./routes/messageRoutes");
+
 const User = require("./models/User");
 const Message = require("./models/Message");
 
+dotenv.config();
+
 const app = express();
 const server = http.createServer(app);
-
-// ✅ FIXED CORS CONFIG
-const allowedOrigins = [
-  "https://chat-app-sigma-lemon.vercel.app",
-  "http://localhost:3000",
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl) or valid frontend origins
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-app.use(cors(corsOptions)); // ✅ Only one correct CORS use
-app.use(express.json());
-
-// ✅ Routes
-app.use("/api/auth", userRoutes);
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/messages", require("./routes/messageRoutes"));
-
-// ✅ MongoDB Connection
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
-
-// ✅ Setup Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: ["https://chat-app-sigma-lemon.vercel.app", "http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
-// ✅ JWT Middleware for Socket.IO
+// ✅ Proper CORS middleware
+app.use(cors({
+  origin: ["https://chat-app-sigma-lemon.vercel.app", "http://localhost:3000"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+}));
+
+app.use(express.json()); // Parses incoming JSON
+app.use("/api/auth", userRoutes);
+app.use("/api/users", userRoute);
+app.use("/api/messages", messageRoute);
+
+// 🔐 Socket.IO Authentication Middleware
 io.use((socket, next) => {
   const token = socket.handshake.query.token;
   if (!token) return next(new Error("Authentication error"));
@@ -73,9 +49,9 @@ io.use((socket, next) => {
   });
 });
 
-// ✅ Socket.IO Events
+// 💬 Socket.IO Chat Handling
 io.on("connection", (socket) => {
-  console.log("📡 Client connected:", socket.id);
+  console.log("✅ Client connected:", socket.id);
 
   socket.on("setUsername", async (username) => {
     socket.username = username;
@@ -91,26 +67,25 @@ io.on("connection", (socket) => {
   });
 
   socket.on("chatMessage", async ({ text, to }) => {
-    const message = new Message({
-      text,
-      sender: socket.username,
-      receiver: to,
-    });
+    const message = new Message({ text, sender: socket.username, receiver: to });
     await message.save();
-    io.emit("chatMessage", {
-      text,
-      sender: socket.username,
-      receiver: to,
-    });
+    io.emit("chatMessage", { text, sender: socket.username, receiver: to });
   });
 
   socket.on("disconnect", () => {
-    console.log("❌ Client disconnected:", socket.id);
+    console.log("🚪 Client disconnected:", socket.id);
     socket.broadcast.emit("userDisconnected", socket.username);
   });
 });
 
-// ✅ Start the Server
+// 🌐 MongoDB Connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB error:", err));
+
+// 🚀 Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
