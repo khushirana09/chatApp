@@ -10,7 +10,7 @@ const Login = () => {
     e.preventDefault();
 
     //send request to backend
-    const response = await fetch(`${apiUrl}/api/auth/login`, {
+    const response = await fetch(`https://chat-app-mgo9.onrender.com/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
