@@ -6,12 +6,9 @@ const cors = require("cors");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
-const users = {};
 
 const userRoutes = require("./routes/auth");
 const userRoute = require("./routes/userRoutes");
-//const messageRoute = require("./routes/messageRoutes");
-
 const User = require("./models/User");
 const Message = require("./models/Message");
 
@@ -19,20 +16,23 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: ["https://chat-app-indol-ten.vercel.app", "http://localhost:3000"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-  },
-});
 
+// 🌐 Setup allowed origins
 const allowedOrigins = [
   "http://localhost:3000",
   "https://chat-app-indol-ten.vercel.app",
 ];
 
-// ✅ Proper CORS middleware
+// 🌐 Setup Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  },
+});
+
+// 🌐 Setup Express CORS middleware
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -45,102 +45,103 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
+
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+app.use(express.json()); // Parse incoming JSON
 
-app.use(express.json()); // Parses incoming JSON
-app.use("/api/auth", require("./routes/auth"));
+// 🚏 API Routes
+app.use("/api/auth", userRoutes);
 app.use("/api/users", userRoute);
-//app.use("/api/messages", messageRoute);
+// app.use("/api/messages", messageRoute); // Uncomment if used
 
-// 🔐 Socket.IO Authentication Middleware
+// 🗺️ Track connected users and their socket IDs
+const users = {};
+const userSocketMap = {};
+
+// 🔐 Socket.IO authentication middleware
 io.use((socket, next) => {
   const token = socket.handshake.query.token;
   if (!token) return next(new Error("Authentication error"));
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) return next(new Error("Authentication error"));
-    socket.user = decoded;
+    socket.user = decoded; // Attach decoded user info
     next();
   });
 });
 
-// 💬 Socket.IO Chat Handling
+// 💬 Socket.IO connection handling
 io.on("connection", (socket) => {
-  //when a new user joins , they emit their username
-  socket.on("join", (username) => {
-    users[username] = socket.id;
-    console.log(`${username} connected with id ${socket.id}`);
-  });
+  const username = socket.user.username;
 
-  // when sending private msgs
-  socket.on("private-message", ({ from, message }) => {
-    console.log("Private message from", from, message);
+  // 🟢 Store user and socket ID
+  users[username] = socket.id;
+  userSocketMap[username] = socket.id;
+  console.log(`${username} connected with socket ID ${socket.id}`);
+
+  // 📥 Listen for private messages
+  socket.on("private-message", ({ to, from, message }) => {
+    console.log("Private message from", from, "to", to, ":", message);
+
     const targetSocketId = users[to];
     if (targetSocketId) {
+      // 👇 Send only to that user
       socket.to(targetSocketId).emit("private-message", { from, message });
     }
   });
-  socket.emit("join", currentUserName);
-  socket.emit("private-message", {
-    to: selectedUser, // the person you clicked
-    from: currentUserName,
-    message: messageInput,
-  });
 
-  socket.on("disconnect", () => {
-    //optional : remove disconnected users form list
-    for (let name in users) {
-      if (users[name] === socket.id) {
-        delete users[name];
-        break;
-      }
-    }
-  });
-  const username = socket.user.username;
-  userSocketMap[username] = socket.id;
-
+  // 📥 Load previous chat messages from DB
   socket.on("getMessages", async () => {
     try {
-      const messages = await Message.find().sort({ createdAt: 1 }); // sort oldest to newest
+      const messages = await Message.find().sort({ createdAt: 1 }); // oldest to newest
       socket.emit("previousMessages", messages);
     } catch (err) {
       console.error("Error fetching messages:", err);
     }
   });
 
+  // 📥 Public or Private Chat Message Logic
   socket.on("chatMessage", async ({ text, to }) => {
     const message = new Message({
-      sender: socket.user.username,
+      sender: username,
       receiver: to,
       message: text,
     });
+
     await message.save();
 
     const payload = {
-      sender: socket.user.username,
+      sender: username,
       receiver: to,
       message: text,
     };
 
     if (to === "all") {
+      // 🌍 Broadcast to everyone
       io.emit("chatMessage", payload);
     } else {
-      //send to the receiver
+      // 📤 Send to receiver
       if (userSocketMap[to]) {
         io.to(userSocketMap[to]).emit("chatMessage", payload);
       }
-      //send to sender as well
+
+      // 📤 Also send to sender (for self-view)
       socket.emit("chatMessage", payload);
     }
   });
 
+  // 🔌 Handle disconnection
   socket.on("disconnect", () => {
+    console.log(`${username} disconnected`);
+
+    // Remove user from both maps
+    delete users[username];
     delete userSocketMap[username];
   });
 });
 
-// 🌐 MongoDB Connection
+// 🧠 MongoDB connection
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => console.log("✅ MongoDB connected"))
