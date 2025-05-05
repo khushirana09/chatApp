@@ -80,6 +80,15 @@ io.on("connection", (socket) => {
     });
     await message.save();
 
+    socket.on("getMessages", async () => {
+      try {
+        const messages = await Message.find().sort({ createdAt: 1 }); // sort oldest to newest
+        socket.emit("previousMessages", messages);
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+    });
+
     if (to === "all") {
       io.emit("chatMessage", { user: socket.username, text });
     } else if (userSocketMap[to]) {

@@ -30,8 +30,14 @@ function ChatApp() {
 
     newSocket.emit("setUsername", storedName);
 
+    // ✅ Ask backend to send stored messages
+    newSocket.emit("getMessages");
+
     newSocket.on("chatMessage", (data) => {
       setMessages((prev) => [...prev, data]);
+    });
+    newSocket.on("previousMessages", (storedMessages) => {
+      setMessages(storedMessages);
     });
 
     newSocket.on("typing", (user) => {
@@ -67,8 +73,12 @@ function ChatApp() {
       <h2>Welcome, {username}</h2>
       <div>
         {messages.map((msg, index) => (
-          <div key={index}>
-            <b>{msg.user}</b>: {msg.text}
+          <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+            {messages.map((msg, index) => (
+              <div key={index}>
+                <b>{msg.user}</b>: {msg.text}
+              </div>
+            ))}
           </div>
         ))}
         {typing && <p>{typing} is typing...</p>}
