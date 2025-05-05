@@ -8,7 +8,7 @@ const { Server } = require("socket.io");
 
 const userRoutes = require("./routes/auth");
 const userRoute = require("./routes/userRoutes");
-const messageRoute = require("./routes/messageRoutes");
+//const messageRoute = require("./routes/messageRoutes");
 
 const User = require("./models/User");
 const Message = require("./models/Message");
@@ -44,7 +44,7 @@ app.options("*", cors(corsOptions));
 app.use(express.json()); // Parses incoming JSON
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", userRoute);
-app.use("/api/messages", messageRoute);
+//app.use("/api/messages", messageRoute);
 
 // 🔐 Socket.IO Authentication Middleware
 io.use((socket, next) => {
