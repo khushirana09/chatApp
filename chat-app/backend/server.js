@@ -6,7 +6,7 @@ const cors = require("cors");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
-const userSocketMap = {};
+const users = {};
 
 const userRoutes = require("./routes/auth");
 const userRoute = require("./routes/userRoutes");
@@ -67,10 +67,38 @@ io.use((socket, next) => {
 
 // 💬 Socket.IO Chat Handling
 io.on("connection", (socket) => {
+  //when a new user joins , they emit their username
+  socket.on("join", (username) => {
+    users[username] = socket.id;
+    console.log(`${username} connected with id ${socket.id}`);
+  });
 
+  // when sending private msgs
+  socket.on("private-message", ({ from, message }) => {
+    console.log("Private message from", from, message);
+    const targetSocketId = users[to];
+    if (targetSocketId) {
+      socket.to(targetSocketId).emit("private-message", { from, message });
+    }
+  });
+  socket.emit("join", currentUserName);
+  socket.emit("private-message", {
+    to: selectedUser, // the person you clicked
+    from: currentUserName,
+    message: messageInput,
+  });
+
+  socket.on("disconnect", () => {
+    //optional : remove disconnected users form list
+    for (let name in users) {
+      if (users[name] === socket.id) {
+        delete users[name];
+        break;
+      }
+    }
+  });
   const username = socket.user.username;
   userSocketMap[username] = socket.id;
-
 
   socket.on("getMessages", async () => {
     try {
