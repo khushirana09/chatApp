@@ -103,7 +103,15 @@ function ChatApp() {
       >
         {messages.map((msg, index) => (
           <div key={index}>
-            <b>{msg.sender || msg.user}</b>: {msg.message || msg.text}
+            {msg.receiver === "all" ? (
+              <div>
+                <b>{msg.sender}</b> (Global) : {msg.message}
+              </div>
+            ) : (
+              <div>
+                <b>{msg.sender}</b> ➡️ <b>{msg.receiver}</b>: {msg.message}
+              </div>
+            )}
           </div>
         ))}
       </div>

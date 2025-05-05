@@ -89,13 +89,21 @@ io.on("connection", (socket) => {
     });
     await message.save();
 
+    const payload = {
+      sender: socket.username,
+      receiver: to,
+      message: text,
+    };
+
     if (to === "all") {
-      io.emit("chatMessage", { user: socket.username, text });
-    } else if (userSocketMap[to]) {
-      io.to(userSocketMap[to]).emit("chatMessage", {
-        user: socket.username,
-        text,
-      });
+      io.emit("chatMessage", payload);
+    } else {
+      //send to the receiver
+      if (userSocketMap[to]) {
+        io.to(userSocketMap[to]).emit("chatMessage", payload);
+      }
+      //send to sender as well
+      socket.emit("chatMessage", payload);
     }
   });
 
