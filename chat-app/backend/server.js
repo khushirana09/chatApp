@@ -67,11 +67,6 @@ io.use((socket, next) => {
 
 // 💬 Socket.IO Chat Handling
 io.on("connection", (socket) => {
-  socket.on("setUsername", (username) => {
-    socket.username = username;
-    userSocketMap[username] = socket.id;
-  });
-
   socket.on("getMessages", async () => {
     try {
       const messages = await Message.find().sort({ createdAt: 1 }); // sort oldest to newest
@@ -83,7 +78,7 @@ io.on("connection", (socket) => {
 
   socket.on("chatMessage", async ({ text, to }) => {
     const message = new Message({
-      sender: socket.username,
+      sender: socket.user.username,
       receiver: to,
       message: text,
     });
