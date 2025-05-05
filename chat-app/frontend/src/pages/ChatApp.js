@@ -26,14 +26,6 @@ function ChatApp() {
       query: { token },
     });
 
-    // Correct fetch request
-    fetch(`${BACKEND_URL}/api/auth/login?token=${token}`, {
-      method: "GET", // or 'POST' if needed
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
     setSocket(newSocket);
 
     newSocket.emit("setUsername", storedName);
@@ -76,7 +68,7 @@ function ChatApp() {
       <div>
         {messages.map((msg, index) => (
           <div key={index}>
-            <b>{msg.sender}</b>: {msg.text}
+            <b>{msg.user}</b>: {msg.text}
           </div>
         ))}
         {typing && <p>{typing} is typing...</p>}

@@ -6,6 +6,7 @@ const cors = require("cors");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
+const userSocketMap = {};
 
 const userRoutes = require("./routes/auth");
 const userRoute = require("./routes/userRoutes");
@@ -20,10 +21,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      "https://chat-app-indol-ten.vercel.app",
-      "http://localhost:3000",
-    ],
+    origin: ["https://chat-app-indol-ten.vercel.app", "http://localhost:3000"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   },
@@ -69,38 +67,31 @@ io.use((socket, next) => {
 
 // 💬 Socket.IO Chat Handling
 io.on("connection", (socket) => {
-  console.log("✅ Client connected:", socket.id);
-
-  socket.on("setUsername", async (username) => {
+  socket.on("setUsername", (username) => {
     socket.username = username;
-    socket.broadcast.emit("userConnected", username);
-  });
-
-  socket.on("typing", () => {
-    socket.broadcast.emit("typing", socket.username);
-  });
-
-  socket.on("stopTyping", () => {
-    socket.broadcast.emit("stopTyping", socket.username);
+    userSocketMap[username] = socket.id;
   });
 
   socket.on("chatMessage", async ({ text, to }) => {
     const message = new Message({
+      user: socket.username,
       text,
-      sender: socket.username,
-      receiver: to,
+      to,
     });
     await message.save();
-    io.to(toSocketId).emit("chatMessage", {
-      text,
-      sender: socket.username,
-      receiver: to,
-    });
+
+    if (to === "all") {
+      io.emit("chatMessage", { user: socket.username, text });
+    } else if (userSocketMap[to]) {
+      io.to(userSocketMap[to]).emit("chatMessage", {
+        user: socket.username,
+        text,
+      });
+    }
   });
 
   socket.on("disconnect", () => {
-    console.log("🚪 Client disconnected:", socket.id);
-    socket.broadcast.emit("userDisconnected", socket.username);
+    delete userSocketMap[socket.username];
   });
 });
 
@@ -109,7 +100,6 @@ mongoose
   .connect(process.env.MONGO_URL)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB error:", err));
-
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5000;
