@@ -20,7 +20,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
-      "https://chat-app-sigma-lemon.vercel.app",
+      "https://chat-app-indol-ten.vercel.app",
       "http://localhost:3000",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -30,7 +30,7 @@ const io = new Server(server, {
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://chat-app-sigma-lemon.vercel.app",
+  "https://chat-app-indol-ten.vercel.app",
 ];
 
 // ✅ Proper CORS middleware
@@ -90,7 +90,11 @@ io.on("connection", (socket) => {
       receiver: to,
     });
     await message.save();
-    io.to(toSocketId).emit("chatMessage", { text, sender: socket.username, receiver: to });
+    io.to(toSocketId).emit("chatMessage", {
+      text,
+      sender: socket.username,
+      receiver: to,
+    });
   });
 
   socket.on("disconnect", () => {
@@ -101,12 +105,17 @@ io.on("connection", (socket) => {
 
 // 🌐 MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URL)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB error:", err));
+
+// Serve static files (e.g., React app build)
+app.use(express.static(path.join(__dirname, "client/build")));
+
+// Handle all other requests by sending the React app's index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/build", "index.html"));
+});
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5000;
