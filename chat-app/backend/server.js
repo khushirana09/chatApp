@@ -110,13 +110,6 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB error:", err));
 
-// Serve static files (e.g., React app build)
-app.use(express.static(path.join(__dirname, "client/build")));
-
-// Handle all other requests by sending the React app's index.html
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "client/build", "index.html"));
-});
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5000;
