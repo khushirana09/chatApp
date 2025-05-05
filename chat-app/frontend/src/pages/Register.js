@@ -7,7 +7,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || process.env.REACT_APP_API_BASE_URL;
+ // const apiUrl = import.meta.env.VITE_API_BASE_URL || process.env.REACT_APP_API_BASE_URL;
 
   const handleRegister = async (e) => {
     e.preventDefault();
