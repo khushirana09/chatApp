@@ -90,7 +90,7 @@ io.on("connection", (socket) => {
     await message.save();
 
     const payload = {
-      sender: socket.username,
+      sender: socket.user.username,
       receiver: to,
       message: text,
     };
