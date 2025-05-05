@@ -84,6 +84,13 @@ function ChatApp() {
         onKeyPress={handleTyping}
       />
       <button onClick={handleSend}>Send</button>
+      <button
+        onClick={() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("username");
+          navigate("/login");
+        }} Logout
+      ></button>
     </div>
   );
 }
