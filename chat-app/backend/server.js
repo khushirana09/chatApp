@@ -72,22 +72,22 @@ io.on("connection", (socket) => {
     userSocketMap[username] = socket.id;
   });
 
+  socket.on("getMessages", async () => {
+    try {
+      const messages = await Message.find().sort({ createdAt: 1 }); // sort oldest to newest
+      socket.emit("previousMessages", messages);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  });
+
   socket.on("chatMessage", async ({ text, to }) => {
     const message = new Message({
-      user: socket.username,
-      text,
-      to,
+      sender: socket.username,
+      receiver: to,
+      message: text,
     });
     await message.save();
-
-    socket.on("getMessages", async () => {
-      try {
-        const messages = await Message.find().sort({ createdAt: 1 }); // sort oldest to newest
-        socket.emit("previousMessages", messages);
-      } catch (err) {
-        console.error("Error fetching messages:", err);
-      }
-    });
 
     if (to === "all") {
       io.emit("chatMessage", { user: socket.username, text });

@@ -71,17 +71,12 @@ function ChatApp() {
   return (
     <div>
       <h2>Welcome, {username}</h2>
-      <div>
+      <div style={{ maxHeight: "300px", overflowY: "auto" }}>
         {messages.map((msg, index) => (
-          <div style={{ maxHeight: "300px", overflowY: "auto" }}>
-            {messages.map((msg, index) => (
-              <div key={index}>
-                <b>{msg.user}</b>: {msg.text}
-              </div>
-            ))}
+          <div key={index}>
+            <b>{msg.sender || msg.user}</b>: {msg.message || msg.text}
           </div>
         ))}
-        {typing && <p>{typing} is typing...</p>}
       </div>
       <input
         value={message}
