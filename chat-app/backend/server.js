@@ -67,6 +67,11 @@ io.use((socket, next) => {
 
 // 💬 Socket.IO Chat Handling
 io.on("connection", (socket) => {
+
+  const username = socket.user.username;
+  userSocketMap[username] = socket.id;
+
+
   socket.on("getMessages", async () => {
     try {
       const messages = await Message.find().sort({ createdAt: 1 }); // sort oldest to newest
@@ -103,7 +108,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    delete userSocketMap[socket.username];
+    delete userSocketMap[username];
   });
 });
 
