@@ -9,6 +9,7 @@ function ChatApp() {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState(false);
   const [username, setUsername] = useState("");
+  const BACKEND_URL = "https://chat-app-mgo9.onrender.com";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -21,8 +22,16 @@ function ChatApp() {
 
     setUsername(storedName);
 
-    const newSocket = io("https://chat-app-v09s.onrender.com", {
-      query: { token }
+    const newSocket = io(`${BACKEND_URL}`, {
+      query: { token },
+    });
+
+    // Correct fetch request
+    fetch(`${BACKEND_URL}/api/auth/login?token=${token}`, {
+      method: "GET", // or 'POST' if needed
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
 
     setSocket(newSocket);

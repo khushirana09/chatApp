@@ -19,11 +19,19 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["https://chat-app-sigma-lemon.vercel.app", "http://localhost:3000"],
+    origin: [
+      "https://chat-app-sigma-lemon.vercel.app",
+      "http://localhost:3000",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   },
 });
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://chat-app-sigma-lemon.vercel.app",
+];
 
 // ✅ Proper CORS middleware
 const corsOptions = {
@@ -76,9 +84,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("chatMessage", async ({ text, to }) => {
-    const message = new Message({ text, sender: socket.username, receiver: to });
+    const message = new Message({
+      text,
+      sender: socket.username,
+      receiver: to,
+    });
     await message.save();
-    io.emit("chatMessage", { text, sender: socket.username, receiver: to });
+    io.to(toSocketId).emit("chatMessage", { text, sender: socket.username, receiver: to });
   });
 
   socket.on("disconnect", () => {
@@ -88,10 +100,12 @@ io.on("connection", (socket) => {
 });
 
 // 🌐 MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log("✅ MongoDB connected"))
+mongoose
+  .connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB error:", err));
 
 // 🚀 Start server
