@@ -85,7 +85,7 @@ function ChatApp() {
         [data.userId]: data.status,
       }));
     };
-    newSocket.on("user-status" , updateUserStatus);
+    newSocket.on("user-status", updateUserStatus);
 
     // ✍️ Typing indicator
     newSocket.on("typing", (user) => {
@@ -128,21 +128,15 @@ function ChatApp() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div className="chat-container">
       <h2>Welcome, {username}</h2>
 
-      <div style={{ display: "flex", gap: "20px" }}>
+      <div className="chat-content">
         {/* 👥 Sidebar: Users list */}
-        <div style={{ width: "200px", borderRight: "1px solid gray" }}>
+        <div className="chat-sidebar">
           <h4>Users</h4>
           <div
-            style={{
-              cursor: "pointer",
-              fontWeight: selectedUser === "all" ? "bold" : "normal",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className={`user-option ${selectedUser === "all" ? "active" : ""}`}
             onClick={() => setSelectedUser("all")}
           >
             🌐 Global Chat
@@ -150,43 +144,27 @@ function ChatApp() {
           {users.map((u, i) => (
             <div
               key={i}
-              style={{
-                cursor: "pointer",
-                fontWeight: selectedUser === u.username ? "bold" : "normal",
-              }}
+              className={`user-option ${
+                selectedUser === u.username ? "active" : ""
+              }`}
               onClick={() => setSelectedUser(u.username)}
             >
               {/* online and offline status inidcator */}
               <span
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor:
-                    userStatus[u.username] === "online" ? "green" : "gray",
-                  marginRight: "10px", // space between dot and username
-                }}
-              >
-                {" "}
-              </span>
+                className={`status-indicator ${
+                  userStatus[u.username] === "online" ? "online" : "offline"
+                }`}
+              ></span>
               {u.username}
             </div>
           ))}
         </div>
 
         {/* 💬 Main Chat Box */}
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              maxHeight: "400px",
-              overflowY: "auto",
-              border: "1px solid #ccc",
-              padding: "10px",
-              marginBottom: "10px",
-            }}
-          >
+        <div className="chat-main">
+          <div className="chat-messages">
             {messages.map((msg, index) => (
-              <div key={index}>
+              <div key={index} className="message">
                 {msg.receiver === "all" ? (
                   <div>
                     <b>{msg.sender}</b> (Global): {msg.message}
@@ -199,44 +177,33 @@ function ChatApp() {
 
                 {/* show online/offline status next to the sender */}
                 <span
-                  style={{
-                    fontSize: "10px",
-                    color:
-                      userStatus[msg.sender] === "online" ? "green" : "grey",
-                  }}
+                  className={`status-text ${
+                    userStatus[msg.sender] === "online" ? "online" : "offline"
+                  }`}
                 >
-                  {" "}
-                  ({userStatus[msg.sender] === "online"
-                    ? "Online"
-                    : "Offline"}){" "}
+                  ({userStatus[msg.sender] === "online" ? "Online" : "Offline"}){" "}
                 </span>
               </div>
             ))}
           </div>
 
           {typing && typing !== username && (
-            <div style={{ fontStyle: "italic", marginBottom: "5px" }}>
-              {typing} is typing...
-            </div>
+            <div className="typing-indicator">{typing} is typing...</div>
           )}
 
           {/* 📝 Message input */}
-          <input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleTyping}
-            placeholder={`Message to ${selectedUser}`}
-            style={{ width: "70%", padding: "5px" }}
-          />
-          <button onClick={handleSend} style={{ marginLeft: "10px" }}>
-            Send
-          </button>
-          <button
-            onClick={handleLogout}
-            style={{ marginLeft: "10px", backgroundColor: "tomato" }}
-          >
-            Logout
-          </button>
+          <div className="chat-input">
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleTyping}
+              placeholder={`Message to ${selectedUser}`}
+            />
+            <button onClick={handleSend}>Send</button>
+            <button className="logout-button" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </div>
       </div>
     </div>
