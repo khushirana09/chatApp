@@ -151,8 +151,6 @@ io.on("connection", (socket) => {
     io.emit("user-status", { userId: username, status: "offline" });
   });
 
-  console.log(`${username} disconnected`);
-
   // Remove user from both maps
   delete users[username];
   delete userSocketMap[username];
