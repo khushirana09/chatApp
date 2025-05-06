@@ -85,6 +85,7 @@ function ChatApp() {
         [data.userId]: data.status,
       }));
     };
+    newSocket.on("user-status" , updateUserStatus);
 
     // ✍️ Typing indicator
     newSocket.on("typing", (user) => {

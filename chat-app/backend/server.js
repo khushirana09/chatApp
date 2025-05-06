@@ -146,7 +146,6 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log(`${username} disconnected`);
     //find user based on socket id or user id and mark them offline
-    const username = socket.user?.username;
     usersOnline[username] = false;
     io.emit("user-status", { userId: username, status: "offline" });
   });
