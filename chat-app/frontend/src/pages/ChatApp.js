@@ -160,6 +160,7 @@ function ChatApp() {
                   borderRadius: "50%",
                   backgroundColor:
                     userStatus[u.username] === "online" ? "green" : "gray",
+                    marginRight: "10px" , // space between dot and username
                 }}
               >
                 {" "}

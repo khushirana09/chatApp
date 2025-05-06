@@ -77,10 +77,11 @@ io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
   const username = socket.user.username;
 
-  //listen for user login event (or when a user sends a message etc.)
+ // Handle user login
   socket.on("user-login", (userId) => {
     usersOnline[userId] = true;
     io.emit("user-status", { userId, status: "online" });
+    console.log(`User ${userId} is now online`);
   });
 
   // 🟢 Store user and socket ID
