@@ -11,6 +11,7 @@ const userRoutes = require("./routes/auth");
 const userRoute = require("./routes/userRoutes");
 const User = require("./models/User");
 const Message = require("./models/Message");
+const usersOnline = {}; //to store users online status
 
 dotenv.config();
 
@@ -73,7 +74,14 @@ io.use((socket, next) => {
 
 // 💬 Socket.IO connection handling
 io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
   const username = socket.user.username;
+
+  //listen for user login event (or when a user sends a message etc.)
+  socket.on("user-login", (userId) => {
+    usersOnline[userId] = true;
+    io.emit("user-status", { userId, status: "online" });
+  });
 
   // 🟢 Store user and socket ID
   users[username] = socket.id;
@@ -133,6 +141,14 @@ io.on("connection", (socket) => {
 
   // 🔌 Handle disconnection
   socket.on("disconnect", () => {
+    //find user based on socket id or user id and mark them offline
+    for (let userId in usersOnline) {
+      if (usersOnline[userId] === socket.id) {
+        usersOnline[userId] = false;
+        io.emit("user-status", { userId, status: "offline" });
+        break;
+      }
+    }
     console.log(`${username} disconnected`);
 
     // Remove user from both maps

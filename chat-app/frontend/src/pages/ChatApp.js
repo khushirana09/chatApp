@@ -13,6 +13,7 @@ function ChatApp() {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("all");
   const [username, setUsername] = useState("");
+  const [userStatus, setUserStatus] = useState({}); //show online and offline status
 
   const BACKEND_URL = "https://chat-app-mgo9.onrender.com";
 
@@ -70,6 +71,21 @@ function ChatApp() {
       setMessages(relevantMessages);
     });
 
+    //online and offline status
+
+    newSocket.on("user-status", (data) => {
+      //update the UI based on data status
+      updateUserStatus(data);
+    });
+
+    const updateUserStatus = (data) => {
+      setUserStatus((prevStatus) => ({
+        ...prevStatus,
+        [data.userId]: data.status,
+      }));
+    };
+
+
     // ✍️ Typing indicator
     newSocket.on("typing", (user) => {
       setTyping(user);
@@ -119,7 +135,10 @@ function ChatApp() {
         <div style={{ width: "200px", borderRight: "1px solid gray" }}>
           <h4>Users</h4>
           <div
-            style={{ cursor: "pointer", fontWeight: selectedUser === "all" ? "bold" : "normal" }}
+            style={{
+              cursor: "pointer",
+              fontWeight: selectedUser === "all" ? "bold" : "normal",
+            }}
             onClick={() => setSelectedUser("all")}
           >
             🌐 Global Chat
@@ -127,9 +146,24 @@ function ChatApp() {
           {users.map((u, i) => (
             <div
               key={i}
-              style={{ cursor: "pointer", fontWeight: selectedUser === u.username ? "bold" : "normal" }}
+              style={{
+                cursor: "pointer",
+                fontWeight: selectedUser === u.username ? "bold" : "normal",
+              }}
               onClick={() => setSelectedUser(u.username)}
             >
+              {/* online and offline status inidcator */}
+              <span
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  backgroundColor:
+                    userStatus[u.username] === "online" ? "green" : "gray",
+                }}
+              >
+                {" "}
+              </span>
               {u.username}
             </div>
           ))}
@@ -157,6 +191,20 @@ function ChatApp() {
                     <b>{msg.sender}</b> ➡️ <b>{msg.receiver}</b>: {msg.message}
                   </div>
                 )}
+
+                {/* show online/offline status next to the sender */}
+                <span
+                  style={{
+                    fontSize: "10px",
+                    color:
+                      userStatus[msg.sender] === "online" ? "green" : "grey",
+                  }}
+                >
+                  {" "}
+                  ({userStatus[msg.sender] === "online"
+                    ? "Online"
+                    : "Offline"}){" "}
+                </span>
               </div>
             ))}
           </div>
@@ -178,7 +226,10 @@ function ChatApp() {
           <button onClick={handleSend} style={{ marginLeft: "10px" }}>
             Send
           </button>
-          <button onClick={handleLogout} style={{ marginLeft: "10px", backgroundColor: "tomato" }}>
+          <button
+            onClick={handleLogout}
+            style={{ marginLeft: "10px", backgroundColor: "tomato" }}
+          >
             Logout
           </button>
         </div>
