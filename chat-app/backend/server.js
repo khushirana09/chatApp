@@ -11,20 +11,21 @@ const userRoutes = require("./routes/auth");
 const userRoute = require("./routes/userRoutes");
 const User = require("./models/User");
 const Message = require("./models/Message");
-const usersOnline = {}; //to store users online status
+
+const usersOnline = {}; // Track online users
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-// 🌐 Setup allowed origins
+// ✅ Allowed frontend origins
 const allowedOrigins = [
   "http://localhost:3000",
   "https://chat-app-indol-ten.vercel.app",
 ];
 
-// 🌐 Setup Socket.IO with CORS
+// ✅ Socket.IO setup with CORS
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -33,7 +34,7 @@ const io = new Server(server, {
   },
 });
 
-// 🌐 Setup Express CORS middleware
+// ✅ Express CORS middleware
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -49,124 +50,125 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-app.use(express.json()); // Parse incoming JSON
+app.use(express.json());
 
-// 🚏 API Routes
+// ✅ API routes
 app.use("/api/auth", userRoutes);
 app.use("/api/users", userRoute);
-// app.use("/api/messages", messageRoute); // Uncomment if used
 
-// 🗺️ Track connected users and their socket IDs
-const users = {};
-const userSocketMap = {};
+// ✅ User and socket mapping
+const users = {}; // username -> socketId
+const userSocketMap = {}; // username -> socketId
 
-// 🔐 Socket.IO authentication middleware
+// ✅ Socket.IO auth middleware
 io.use((socket, next) => {
   const token = socket.handshake.query.token;
   if (!token) return next(new Error("Authentication error"));
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) return next(new Error("Authentication error"));
-    socket.user = decoded; // Attach decoded user info
+    socket.user = decoded; // Attach user info
     next();
   });
 });
 
-// 💬 Socket.IO connection handling
+// ✅ Handle Socket.IO connection
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
   const username = socket.user.username;
+  console.log(`✅ ${username} connected (socket ID: ${socket.id})`);
 
-  // Handle user login
-  socket.on("user-login", (userId) => {
-    usersOnline[username] = true;
-    io.emit("user-status", { userId:username ,  status: "online" });
-    console.log(`User ${userId} is now online`);
-  });
-
-  // 🟢 Store user and socket ID
+  // 🔵 Mark user online
+  usersOnline[username] = true;
   users[username] = socket.id;
   userSocketMap[username] = socket.id;
-  console.log(`${username} connected with socket ID ${socket.id}`);
 
-  // 📥 Listen for private messages
-  socket.on("private-message", ({ to, from, message }) => {
-    console.log("Private message from", from, "to", to, ":", message);
+  // Notify all clients of this user's status
+  io.emit("user-status", { userId: username, status: "online" });
 
-    const targetSocketId = users[to];
-    if (targetSocketId) {
-      // 👇 Send only to that user
-      socket.to(targetSocketId).emit("private-message", { from, message });
+  // Send full list of statuses on connect
+  io.emit("initial-user-status", usersOnline);
+
+  // ✅ On login, log and broadcast
+  socket.on("user-login", (userId) => {
+    usersOnline[userId] = true;
+    io.emit("user-status", { userId, status: "online" });
+    console.log(`🔓 ${userId} logged in and marked online`);
+  });
+
+  // ✅ Receive chat message (global or private)
+  socket.on("chatMessage", async ({ text, to }) => {
+    const sender = username;
+    const receiver = to;
+
+    const newMessage = new Message({
+      sender,
+      receiver,
+      message: text,
+      timestamp: new Date(),
+    });
+
+    await newMessage.save();
+
+    const messageData = {
+      sender,
+      receiver,
+      message: text,
+      timestamp: newMessage.timestamp,
+    };
+
+    // If private message
+    if (receiver !== "all" && users[receiver]) {
+      const targetSocketId = users[receiver];
+      socket.to(targetSocketId).emit("chatMessage", messageData);
+      socket.emit("chatMessage", messageData); // echo back to sender
+    } else {
+      // Global message
+      io.emit("chatMessage", messageData);
     }
   });
 
-  // 📥 Load previous chat messages from DB
+  // ✅ Typing indicators
+  socket.on("typing", () => {
+    socket.broadcast.emit("typing", username);
+  });
+
+  socket.on("stopTyping", () => {
+    socket.broadcast.emit("stopTyping");
+  });
+
+  // ✅ Fetch previous messages from DB
   socket.on("getMessages", async () => {
     try {
-      const messages = await Message.find().sort({ createdAt: 1 }); // oldest to newest
+      const messages = await Message.find().sort({ timestamp: 1 }).lean();
       socket.emit("previousMessages", messages);
     } catch (err) {
       console.error("Error fetching messages:", err);
     }
   });
 
-  // 📥 Public or Private Chat Message Logic
-  socket.on("chatMessage", async ({ text, to }) => {
-    const message = new Message({
-      sender: username,
-      receiver: to,
-      message: text,
-    });
-
-    await message.save();
-
-    const payload = {
-      sender: username,
-      receiver: to,
-      message: text,
-    };
-
-    if (to === "all") {
-      // 🌍 Broadcast to everyone
-      io.emit("chatMessage", payload);
-    } else {
-      // 📤 Send to receiver
-      if (userSocketMap[to]) {
-        io.to(userSocketMap[to]).emit("chatMessage", payload);
-      }
-
-      // 📤 Also send to sender (for self-view)
-      socket.emit("chatMessage", payload);
-    }
-  });
-
-  socket.emit("initial-user-status", usersOnline);
-
-  // 🔌 Handle disconnection
+  // ✅ Handle disconnection
   socket.on("disconnect", () => {
-    //find user based on socket id or user id and mark them offline
-    const username = socket.user?.username;
-    if (username) {
-      usersOnline[username] = false;
-      io.emit("user-status", { userId: username, status: "offline" });
-    }
-
-    console.log(`${username} disconnected`);
-
-    // Remove user from both maps
+    console.log(`❌ ${username} disconnected`);
+    delete usersOnline[username];
     delete users[username];
     delete userSocketMap[username];
+    io.emit("user-status", { userId: username, status: "offline" });
   });
 });
 
-// 🧠 MongoDB connection
+// ✅ Connect to MongoDB and start server
 mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
-
-// 🚀 Start server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+  .connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+  });
