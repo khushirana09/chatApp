@@ -33,6 +33,7 @@ function ChatApp() {
       query: { token },
     });
     setSocket(newSocket);
+    newSocket.emit("user-login", storedName);
 
     // 🔽 Fetch all users except self
     fetch(`${BACKEND_URL}/api/users/all`)
@@ -73,10 +74,12 @@ function ChatApp() {
 
     //online and offline status
 
-    newSocket.on("user-status", (data) => {
+    newSocket.on("inital-user-status", (data) => {
       //update the UI based on data status
-      updateUserStatus(data);
+      setUserStatus(data);
     });
+
+    newSocket.emit("user-login" , storedName);
 
     const updateUserStatus = (data) => {
       setUserStatus((prevStatus) => ({
@@ -84,7 +87,6 @@ function ChatApp() {
         [data.userId]: data.status,
       }));
     };
-
 
     // ✍️ Typing indicator
     newSocket.on("typing", (user) => {
@@ -138,6 +140,9 @@ function ChatApp() {
             style={{
               cursor: "pointer",
               fontWeight: selectedUser === "all" ? "bold" : "normal",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
             onClick={() => setSelectedUser("all")}
           >
@@ -160,7 +165,7 @@ function ChatApp() {
                   borderRadius: "50%",
                   backgroundColor:
                     userStatus[u.username] === "online" ? "green" : "gray",
-                    marginRight: "10px" , // space between dot and username
+                  marginRight: "10px", // space between dot and username
                 }}
               >
                 {" "}

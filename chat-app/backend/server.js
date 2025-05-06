@@ -77,7 +77,7 @@ io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
   const username = socket.user.username;
 
- // Handle user login
+  // Handle user login
   socket.on("user-login", (userId) => {
     usersOnline[userId] = true;
     io.emit("user-status", { userId, status: "online" });
@@ -140,16 +140,17 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.emit("initial-user-status", usersOnline);
+
   // 🔌 Handle disconnection
   socket.on("disconnect", () => {
     //find user based on socket id or user id and mark them offline
-    for (let userId in usersOnline) {
-      if (usersOnline[userId] === socket.id) {
-        usersOnline[userId] = false;
-        io.emit("user-status", { userId, status: "offline" });
-        break;
-      }
+    const username = socket.user?.username;
+    if (username) {
+      usersOnline[username] = false;
+      io.emit("user-status", { userId: username, status: "offline" });
     }
+
     console.log(`${username} disconnected`);
 
     // Remove user from both maps
