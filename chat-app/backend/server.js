@@ -79,8 +79,8 @@ io.on("connection", (socket) => {
 
   // Handle user login
   socket.on("user-login", (userId) => {
-    usersOnline[userId] = true;
-    io.emit("user-status", { userId, status: "online" });
+    usersOnline[username] = true;
+    io.emit("user-status", { userId:username ,  status: "online" });
     console.log(`User ${userId} is now online`);
   });
 

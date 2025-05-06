@@ -74,12 +74,10 @@ function ChatApp() {
 
     //online and offline status
 
-    newSocket.on("inital-user-status", (data) => {
+    newSocket.on("initial-user-status", (data) => {
       //update the UI based on data status
       setUserStatus(data);
     });
-
-    newSocket.emit("user-login" , storedName);
 
     const updateUserStatus = (data) => {
       setUserStatus((prevStatus) => ({
