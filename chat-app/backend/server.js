@@ -13,7 +13,6 @@ const User = require("./models/User");
 const Message = require("./models/Message");
 const usersOnline = {}; //to store users online status
 const multer = require("multer"); // upload files
-const path = require("path");
 
 dotenv.config();
 
@@ -41,7 +40,7 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({error: "File upload failed" });
   }
-  
+
   const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${
     req.file.filename
   }`;
