@@ -21,6 +21,7 @@ function ChatApp() {
   const [username, setUsername] = useState("");
   const [userStatus, setUserStatus] = useState({});
   const [showPicker, setShowPicker] = useState(false);
+  const [mediaUrl, setMediaUrl] = useState(null); // media upload
 
   // ✅ Setup and teardown
   useEffect(() => {
@@ -124,14 +125,37 @@ function ChatApp() {
     }
   };
 
+  //fileupload
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json(); // fails if server sends HTML INSTEAD OF JSON
+      setMediaUrl(data.fileUrl); // Save to state
+    } catch (error) {
+      console.error("File upload failed", error);
+    }
+  };
+
   // 📤 Send message
   const handleSend = () => {
-    if (message.trim() && socket) {
+    if ((message.trim() || mediaUrl) && socket) {
       socket.emit("chatMessage", {
         text: message,
         to: selectedUser,
+        media: mediaUrl,
       });
       setMessage("");
+      setMediaUrl(null); // Clear after sending
       socket.emit("stopTyping");
     }
   };
@@ -161,12 +185,16 @@ function ChatApp() {
         {/* 👥 Sidebar with Users */}
         <div className="chat-sidebar">
           <h4>Users</h4>
+
+          {/* 🌐 Global Chat Option */}
           <div
             className={`user-option ${selectedUser === "all" ? "active" : ""}`}
             onClick={() => setSelectedUser("all")}
           >
             🌐 Global Chat
           </div>
+
+          {/* 🧑‍🤝‍🧑 List of Users */}
           {users.map((u, i) => (
             <div
               key={i}
@@ -185,20 +213,24 @@ function ChatApp() {
           ))}
         </div>
 
-        {/* 💬 Chat Area */}
+        {/* 💬 Main Chat Area */}
         <div className="chat-main">
+          {/* 📜 Message List */}
           <div className="chat-messages">
             {messages.map((msg, index) => (
               <div key={index} className="message">
+                {/* 🌍 Global or Private Message */}
                 {msg.receiver === "all" ? (
                   <div>
-                    <b>{msg.sender}</b> (Global): {msg.message}
+                    <b>{msg.sender}</b> (Global): {msg.text}
                   </div>
                 ) : (
                   <div>
-                    <b>{msg.sender}</b> ➡️ <b>{msg.receiver}</b>: {msg.message}
+                    <b>{msg.sender}</b> ➡️ <b>{msg.receiver}</b>: {msg.text}
                   </div>
                 )}
+
+                {/* 📶 Online/Offline Status */}
                 <span
                   className={`status-text ${
                     userStatus[msg.sender] === "online" ? "online" : "offline"
@@ -206,31 +238,73 @@ function ChatApp() {
                 >
                   ({userStatus[msg.sender] === "online" ? "Online" : "Offline"})
                 </span>
+
+                {/* 📎 Media Attachments */}
+                {msg.media && (
+                  <>
+                    {msg.media.endsWith(".jpg") ||
+                    msg.media.endsWith(".png") ? (
+                      <img src={msg.media} alt="uploaded" />
+                    ) : msg.media.endsWith(".mp4") ? (
+                      <video controls src={msg.media} />
+                    ) : msg.media.endsWith(".mp3") ? (
+                      <audio controls src={msg.media}></audio>
+                    ) : (
+                      <a
+                        href={msg.media}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View File
+                      </a>
+                    )}
+                  </>
+                )}
               </div>
             ))}
+
+            {/* ✍️ Typing Status */}
+            {typing && typing !== username && (
+              <div className="typing-indicator">{typing} is typing...</div>
+            )}
           </div>
 
-          {/* ✍️ Typing status */}
-          {typing && typing !== username && (
-            <div className="typing-indicator">{typing} is typing...</div>
-          )}
-
-          {/* 📥 Input section */}
+          {/* 📥 Input Section */}
           <div className="chat-input">
+            {/* 😊 Emoji Picker Button */}
             <button onClick={toggleEmojiPicker}>😊</button>
+
+            {/* 😃 Emoji Picker */}
             {showPicker && (
               <div className="emoji-picker">
                 <Picker data={data} onEmojiSelect={addEmoji} />
               </div>
             )}
 
+            {/* ✏️ Text Input */}
             <input
               value={message}
               onChange={handleInputChange}
               onKeyDown={() => socket?.emit("typing", username)}
               placeholder={`Message to ${selectedUser}`}
             />
+
+            {/* 📎 File Upload */}
+            <label htmlFor="fileInput" className="upload-button">
+              📎
+            </label>
+            <input
+              type="file"
+              id="fileInput"
+              style={{ display: "none" }}
+              accept="image/*,video/*,audio/*"
+              onChange={handleFileUpload}
+            />
+
+            {/* 📤 Send Button */}
             <button onClick={handleSend}>Send</button>
+
+            {/* 🚪 Logout Button */}
             <button className="logout-button" onClick={handleLogout}>
               Logout
             </button>
@@ -240,5 +314,4 @@ function ChatApp() {
     </div>
   );
 }
-
 export default ChatApp;

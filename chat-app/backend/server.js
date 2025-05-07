@@ -12,11 +12,41 @@ const userRoute = require("./routes/userRoutes");
 const User = require("./models/User");
 const Message = require("./models/Message");
 const usersOnline = {}; //to store users online status
+const multer = require("multer"); // upload files
+const path = require("path");
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+//serve upload files
+app.use("/uploads", express.static("uploads"));
+
+//configure multer storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); //create "uploads" folder if not present
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + "-" + file.originalname;
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({ storage });
+
+//API : upload media file
+app.post("/api/upload", upload.single("file"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({error: "File upload failed" });
+  }
+  
+  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${
+    req.file.filename
+  }`;
+  res.json({ fileUrl });
+});
 
 // 🌐 Setup allowed origins
 const allowedOrigins = [
@@ -123,11 +153,12 @@ io.on("connection", (socket) => {
   });
 
   // 📥 Public or Private Chat Message Logic
-  socket.on("chatMessage", async ({ text, to }) => {
+  socket.on("chatMessage", async ({ text, to , media}) => {
     const message = new Message({
       sender: username,
       receiver: to,
       message: text,
+      media: media || null, //support image links
     });
 
     await message.save();
