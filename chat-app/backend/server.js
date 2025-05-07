@@ -6,63 +6,61 @@ const cors = require("cors");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
-const typingUsers = {}; // object to track typing users
+const multer = require("multer");
+
+// Route & Model Imports
 const userRoutes = require("./routes/auth");
 const userRoute = require("./routes/userRoutes");
 const User = require("./models/User");
 const Message = require("./models/Message");
-const usersOnline = {}; //to store users online status
-const multer = require("multer"); // upload files
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-//serve upload files
+// Track typing users & online users
+const typingUsers = {};
+const usersOnline = {};
+const users = {};
+const userSocketMap = {};
+
+// Serve uploaded media
 app.use("/uploads", express.static("uploads"));
 
-//configure multer storage
+// Multer Setup for File Uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); //create "uploads" folder if not present
+    cb(null, "uploads/"); // Make sure 'uploads' folder exists
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + "-" + file.originalname;
     cb(null, uniqueName);
   },
 });
-
 const upload = multer({ storage });
 
-//API : upload media file
-app.post("/api/upload", upload.single("file"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({error: "File upload failed" });
-  }
-
+// ✅ File Upload API
+app.post("/upload", upload.single("file"), (req, res) => {
   const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${
     req.file.filename
   }`;
-  res.json({ fileUrl });
+  console.log("File uploaded:", req.file.filename);
+  res.status(200).json({
+    message: "File uploaded",
+    filename: req.file.filename,
+    fileUrl,
+  });
 });
 
-// 🌐 Setup allowed origins
+// Allowed frontend origins (Vercel + localhost)
 const allowedOrigins = [
   "http://localhost:3000",
   "https://chat-app-indol-ten.vercel.app",
 ];
 
-// 🌐 Setup Socket.IO with CORS
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-  },
-});
-
-// 🌐 Setup Express CORS middleware
+// Express CORS Options
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -80,16 +78,21 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(express.json()); // Parse incoming JSON
 
-// 🚏 API Routes
+// Register Routes
 app.use("/api/auth", userRoutes);
 app.use("/api/users", userRoute);
 // app.use("/api/messages", messageRoute); // Uncomment if used
 
-// 🗺️ Track connected users and their socket IDs
-const users = {};
-const userSocketMap = {};
+// Setup Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  },
+});
 
-// 🔐 Socket.IO authentication middleware
+// 🔐 Authenticate Socket.IO using JWT
 io.use((socket, next) => {
   const token = socket.handshake.query.token;
   if (!token) return next(new Error("Authentication error"));
@@ -101,63 +104,59 @@ io.use((socket, next) => {
   });
 });
 
-// 💬 Socket.IO connection handling
+// 📡 Handle Socket.IO Connections
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
   const username = socket.user.username;
+  console.log("A user connected:", socket.id, "Username:", username);
 
-  // Handle user login
+  // Store user and their socket ID
+  users[username] = socket.id;
+  userSocketMap[username] = socket.id;
+
+  // Notify about online status
   socket.on("user-login", (userId) => {
     usersOnline[username] = true;
     io.emit("user-status", { userId: username, status: "online" });
     console.log(`User ${userId} is now online`);
   });
 
-  //handle typing event : users start typing
+  // Typing events
   socket.on("typing", (username) => {
-    typingUsers[socket.id] = username; //store the username
-    io.emit("typing", Object.values(typingUsers)); //Braodcast typing users
+    typingUsers[socket.id] = username;
+    io.emit("typing", Object.values(typingUsers));
   });
 
-  //handle stop typing event : users stops typing
-  socket.on("stopTyping", (username) => {
-    delete typingUsers[socket.id]; //remove the user from typing list
-    io.emit("typing", Object.values(typingUsers)); //broadcast updated typing users
+  socket.on("stopTyping", () => {
+    delete typingUsers[socket.id];
+    io.emit("typing", Object.values(typingUsers));
   });
 
-  // 🟢 Store user and socket ID
-  users[username] = socket.id;
-  userSocketMap[username] = socket.id;
-  console.log(`${username} connected with socket ID ${socket.id}`);
-
-  // 📥 Listen for private messages
+  // Handle private messages
   socket.on("private-message", ({ to, from, message }) => {
     console.log("Private message from", from, "to", to, ":", message);
-
     const targetSocketId = users[to];
     if (targetSocketId) {
-      // 👇 Send only to that user
       socket.to(targetSocketId).emit("private-message", { from, message });
     }
   });
 
-  // 📥 Load previous chat messages from DB
+  // Fetch previous messages from DB
   socket.on("getMessages", async () => {
     try {
-      const messages = await Message.find({}); // oldest to newest
+      const messages = await Message.find({});
       socket.emit("previousMessages", messages);
     } catch (err) {
       console.error("Error fetching messages:", err);
     }
   });
 
-  // 📥 Public or Private Chat Message Logic
-  socket.on("chatMessage", async ({ text, to , media}) => {
+  // Handle chat messages (public/private)
+  socket.on("chatMessage", async ({ text, to, media }) => {
     const message = new Message({
       sender: username,
       receiver: to,
       message: text,
-      media: media || null, //support image links
+      media: media || null,
     });
 
     await message.save();
@@ -166,38 +165,35 @@ io.on("connection", (socket) => {
       sender: username,
       receiver: to,
       message: text,
+      media: media || null,
     };
 
     if (to === "all") {
-      // 🌍 Broadcast to everyone
-      io.emit("chatMessage", payload);
+      io.emit("chatMessage", payload); // Broadcast
     } else {
-      // 📤 Send to receiver
       if (userSocketMap[to]) {
-        io.to(userSocketMap[to]).emit("chatMessage", payload);
+        io.to(userSocketMap[to]).emit("chatMessage", payload); // Send to receiver
       }
-
-      // 📤 Also send to sender (for self-view)
-      socket.emit("chatMessage", payload);
+      socket.emit("chatMessage", payload); // Echo back to sender
     }
   });
 
+  // Initial user status
   socket.emit("initial-user-status", usersOnline);
 
-  // 🔌 Handle disconnection
+  // Handle disconnection
   socket.on("disconnect", () => {
     console.log(`${username} disconnected`);
-    //find user based on socket id or user id and mark them offline
     usersOnline[username] = false;
     io.emit("user-status", { userId: username, status: "offline" });
-  });
 
-  // Remove user from both maps
-  delete users[username];
-  delete userSocketMap[username];
+    delete users[username];
+    delete userSocketMap[username];
+    delete typingUsers[socket.id];
+  });
 });
 
-// 🧠 MongoDB connection
+// 🧠 Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => console.log("✅ MongoDB connected"))

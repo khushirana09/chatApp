@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 import data from "@emoji-mart/data";
@@ -6,11 +6,9 @@ import Picker from "@emoji-mart/react";
 
 function ChatApp() {
   const navigate = useNavigate();
-
-  // 🌐 Backend server URL
   const BACKEND_URL = "https://chat-app-mgo9.onrender.com";
 
-  // 📦 App state hooks
+  // 🔧 State setup
   const [socket, setSocket] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -20,14 +18,14 @@ function ChatApp() {
   const [username, setUsername] = useState("");
   const [userStatus, setUserStatus] = useState({});
   const [showPicker, setShowPicker] = useState(false);
-  const [mediaUrl, setMediaUrl] = useState(null); // media upload
+  const [mediaUrl, setMediaUrl] = useState(null);
+  const typingTimeoutRef = useRef(null);
 
-  // ✅ Setup and teardown
+  // 🚀 On mount: connect socket, fetch users/messages
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedName = localStorage.getItem("username");
 
-    // 🔐 If no auth, redirect to login
     if (!token || !storedName) {
       navigate("/login");
       return;
@@ -35,16 +33,11 @@ function ChatApp() {
 
     setUsername(storedName);
 
-    // 🔌 Connect to backend with auth token
-    const newSocket = io(BACKEND_URL, {
-      query: { token },
-    });
+    const newSocket = io(BACKEND_URL, { query: { token } });
     setSocket(newSocket);
 
-    // 📤 Notify server that user logged in
     newSocket.emit("user-login", storedName);
 
-    // 📦 Fetch all users except current user
     fetch(`${BACKEND_URL}/api/users/all`)
       .then((res) => res.json())
       .then((data) => {
@@ -52,14 +45,10 @@ function ChatApp() {
         setUsers(filtered);
       });
 
-    // 💬 Request stored messages from server
     newSocket.emit("getMessages");
 
-    // 📨 Receive chat message
     newSocket.on("chatMessage", (data) => {
       const { sender, receiver } = data;
-
-      // Only show relevant messages
       if (
         receiver === "all" ||
         sender === storedName ||
@@ -69,7 +58,6 @@ function ChatApp() {
       }
     });
 
-    // 💾 Load previous messages
     newSocket.on("previousMessages", (storedMessages) => {
       const relevant = storedMessages.filter(
         (msg) =>
@@ -80,12 +68,8 @@ function ChatApp() {
       setMessages(relevant);
     });
 
-    // 🔄 Receive initial online/offline status
-    newSocket.on("initial-user-status", (data) => {
-      setUserStatus(data);
-    });
+    newSocket.on("initial-user-status", setUserStatus);
 
-    // 🚦 Update online/offline status
     newSocket.on("user-status", (data) => {
       setUserStatus((prev) => ({
         ...prev,
@@ -93,37 +77,38 @@ function ChatApp() {
       }));
     });
 
-    // ✍️ Typing indicators from other users
-
-    newSocket.on("typing", (typingUsers) => {
-      const othersTyping = typingUsers.filter((u) => u !== storedName);
-      setTypingUsers(othersTyping);
+    newSocket.on("user-typing", ({ username: typingName }) => {
+      if (typingName !== storedName) {
+        setTypingUsers([typingName]);
+      }
     });
 
-    // 👥 Multiple users typing (optional)
-    newSocket.on("typing", (typingUsers) => {
-      const othersTyping = typingUsers.filter((u) => u !== storedName);
-      setTypingUsers(othersTyping);
+    newSocket.on("stop-typing", ({ username: typingName }) => {
+      if (typingName !== storedName) {
+        setTypingUsers([]);
+      }
     });
 
-    return () => {
-      newSocket.disconnect();
-    };
+    return () => newSocket.disconnect();
   }, [navigate]);
 
-  // 📝 Handle message input change
+  // 🖊️ Handle message input
   const handleInputChange = (e) => {
     const text = e.target.value;
     setMessage(text);
-
     if (text !== "") {
-      socket?.emit("typing", username); // typing started
+      socket?.emit("typing", username);
+
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket?.emit("stop-typing", { username });
+      }, 1000);
     } else {
-      socket?.emit("stopTyping", username); // typing stopped
+      socket?.emit("stop-typing", { username });
     }
   };
 
-  //fileupload
+  // 📁 File upload handler
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -137,8 +122,8 @@ function ChatApp() {
         body: formData,
       });
 
-      const data = await res.json(); // fails if server sends HTML INSTEAD OF JSON
-      setMediaUrl(data.fileUrl); // Save to state
+      const data = await res.json();
+      setMediaUrl(data.fileUrl);
     } catch (error) {
       console.error("File upload failed", error);
     }
@@ -153,8 +138,8 @@ function ChatApp() {
         media: mediaUrl,
       });
       setMessage("");
-      setMediaUrl(null); // Clear after sending
-      socket.emit("stopTyping");
+      setMediaUrl(null);
+      socket.emit("stop-typing", { username });
     }
   };
 
@@ -165,12 +150,10 @@ function ChatApp() {
     navigate("/login");
   };
 
-  // 😊 Toggle emoji picker
-  const toggleEmojiPicker = () => {
-    setShowPicker(!showPicker);
-  };
+  // 😊 Emoji picker toggle
+  const toggleEmojiPicker = () => setShowPicker(!showPicker);
 
-  // 😄 Add emoji to message
+  // 😄 Add emoji to text
   const addEmoji = (emoji) => {
     setMessage((prev) => prev + emoji.native);
   };
@@ -180,11 +163,10 @@ function ChatApp() {
       <h2>Welcome, {username}</h2>
 
       <div className="chat-content">
-        {/* 👥 Sidebar with Users */}
+        {/* 🧍 Sidebar: User list */}
         <div className="chat-sidebar">
           <h4>Users</h4>
 
-          {/* 🌐 Global Chat Option */}
           <div
             className={`user-option ${selectedUser === "all" ? "active" : ""}`}
             onClick={() => setSelectedUser("all")}
@@ -192,7 +174,6 @@ function ChatApp() {
             🌐 Global Chat
           </div>
 
-          {/* 🧑‍🤝‍🧑 List of Users */}
           {users.map((user) => (
             <div
               key={user.username}
@@ -211,13 +192,12 @@ function ChatApp() {
           ))}
         </div>
 
-        {/* 💬 Main Chat Area */}
+        {/* 💬 Chat Area */}
         <div className="chat-main">
-          {/* 📜 Message List */}
+          {/* 📨 Messages */}
           <div className="chat-messages">
-            {messages.map((msg, index) => (
-              <div key={index} className="message">
-                {/* 🌍 Global or Private Message */}
+            {messages.map((msg, i) => (
+              <div key={i} className="message">
                 {msg.receiver === "all" ? (
                   <div>
                     <b>{msg.sender}</b> (Global): {msg.text}
@@ -228,31 +208,25 @@ function ChatApp() {
                   </div>
                 )}
 
-                {/* 📶 Online/Offline Status */}
                 <span
                   className={`status-text ${
                     userStatus[msg.sender] === "online" ? "online" : "offline"
                   }`}
                 >
-                  ({userStatus[msg.sender] === "online" ? "Online" : "Offline"})
+                  ({userStatus[msg.sender]})
                 </span>
 
-                {/* 📎 Media Attachments */}
+                {/* 📎 Media support */}
                 {msg.media && (
                   <>
-                    {msg.media.endsWith(".jpg") ||
-                    msg.media.endsWith(".png") ? (
+                    {msg.media.match(/\.(jpg|png)$/) ? (
                       <img src={msg.media} alt="uploaded" />
                     ) : msg.media.endsWith(".mp4") ? (
                       <video controls src={msg.media} />
                     ) : msg.media.endsWith(".mp3") ? (
                       <audio controls src={msg.media}></audio>
                     ) : (
-                      <a
-                        href={msg.media}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                      <a href={msg.media} target="_blank" rel="noreferrer">
                         View File
                       </a>
                     )}
@@ -261,35 +235,29 @@ function ChatApp() {
               </div>
             ))}
 
-            {/* ✍️ Typing Status */}
+            {/* ✍️ Typing status */}
             {typingUsers.length > 0 && (
               <div className="typing-indicator">
-                {typingUsers.join(",")} is typing...
+                {typingUsers.join(", ")} is typing...
               </div>
             )}
           </div>
 
-          {/* 📥 Input Section */}
+          {/* 🖊️ Input area */}
           <div className="chat-input">
-            {/* 😊 Emoji Picker Button */}
             <button onClick={toggleEmojiPicker}>😊</button>
-
-            {/* 😃 Emoji Picker */}
             {showPicker && (
               <div className="emoji-picker">
                 <Picker data={data} onEmojiSelect={addEmoji} />
               </div>
             )}
 
-            {/* ✏️ Text Input */}
             <input
               value={message}
               onChange={handleInputChange}
-              onKeyDown={() => socket?.emit("typing", username)}
               placeholder={`Message to ${selectedUser}`}
             />
 
-            {/* 📎 File Upload */}
             <label htmlFor="fileInput" className="upload-button">
               📎
             </label>
@@ -301,10 +269,7 @@ function ChatApp() {
               onChange={handleFileUpload}
             />
 
-            {/* 📤 Send Button */}
             <button onClick={handleSend}>Send</button>
-
-            {/* 🚪 Logout Button */}
             <button className="logout-button" onClick={handleLogout}>
               Logout
             </button>
@@ -314,4 +279,5 @@ function ChatApp() {
     </div>
   );
 }
+
 export default ChatApp;
