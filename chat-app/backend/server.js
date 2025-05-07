@@ -6,7 +6,7 @@ const cors = require("cors");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
-
+const typingUsers = {}; // object to track typing users
 const userRoutes = require("./routes/auth");
 const userRoute = require("./routes/userRoutes");
 const User = require("./models/User");
@@ -82,6 +82,18 @@ io.on("connection", (socket) => {
     usersOnline[username] = true;
     io.emit("user-status", { userId: username, status: "online" });
     console.log(`User ${userId} is now online`);
+  });
+
+  //handle typing event : users start typing
+  socket.on("typing", (username) => {
+    typingUsers[socket.id] = username; //store the username
+    io.emit("typing", Object.values(typingUsers)); //Braodcast typing users
+  });
+
+  //handle stop typing event : users stops typing
+  socket.on("stopTyping", (username) => {
+    delete typingUsers[socket.id]; //remove the user from typing list
+    io.emit("typing", Object.values(typingUsers)); //broadcast updated typing users
   });
 
   // 🟢 Store user and socket ID
