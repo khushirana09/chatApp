@@ -14,7 +14,6 @@ function ChatApp() {
   const [socket, setSocket] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [typing, setTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("all");
@@ -95,17 +94,16 @@ function ChatApp() {
     });
 
     // ✍️ Typing indicators from other users
-    newSocket.on("typing", (user) => {
-      if (user !== storedName) setTyping(user);
-    });
 
-    newSocket.on("stopTyping", () => {
-      setTyping(false);
+    newSocket.on("typing", (typingUsers) => {
+      const othersTyping = typingUsers.filter((u) => u !== storedName);
+      setTypingUsers(othersTyping);
     });
 
     // 👥 Multiple users typing (optional)
-    newSocket.on("typingUsers", (typingUsers) => {
-      setTypingUsers(typingUsers);
+    newSocket.on("typing", (typingUsers) => {
+      const othersTyping = typingUsers.filter((u) => u !== storedName);
+      setTypingUsers(othersTyping);
     });
 
     return () => {
@@ -195,20 +193,20 @@ function ChatApp() {
           </div>
 
           {/* 🧑‍🤝‍🧑 List of Users */}
-          {users.map((u, i) => (
+          {users.map((user) => (
             <div
-              key={i}
-              className={`user-option ${
-                selectedUser === u.username ? "active" : ""
+              key={user.username}
+              className={`user-item ${
+                selectedUser === user.username ? "selected" : ""
               }`}
-              onClick={() => setSelectedUser(u.username)}
+              onClick={() => setSelectedUser(user.username)}
             >
+              <span>{user.username}</span>
               <span
-                className={`status-indicator ${
-                  userStatus[u.username] === "online" ? "online" : "offline"
+                className={`status-dot ${
+                  userStatus[user.username] === "online" ? "online" : "offline"
                 }`}
               ></span>
-              {u.username}
             </div>
           ))}
         </div>
@@ -264,8 +262,10 @@ function ChatApp() {
             ))}
 
             {/* ✍️ Typing Status */}
-            {typing && typing !== username && (
-              <div className="typing-indicator">{typing} is typing...</div>
+            {typingUsers.length > 0 && (
+              <div className="typing-indicator">
+                {typingUsers.join(",")} is typing...
+              </div>
             )}
           </div>
 
