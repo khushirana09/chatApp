@@ -20,6 +20,7 @@ function ChatApp() {
   const [showPicker, setShowPicker] = useState(false);
   const [mediaUrl, setMediaUrl] = useState(null);
   const typingTimeoutRef = useRef(null);
+  const [onlineUsers, setOnlineUsers] = useState({});
 
   // 🚀 On mount: connect socket, fetch users/messages
   useEffect(() => {
@@ -37,6 +38,7 @@ function ChatApp() {
     setSocket(newSocket);
 
     newSocket.emit("user-login", storedName);
+    newSocket.emit("join", storedName); // 🟢 new emit for tracking online users
 
     fetch(`${BACKEND_URL}/api/users/all`)
       .then((res) => res.json())
@@ -75,6 +77,10 @@ function ChatApp() {
         ...prev,
         [data.userId]: data.status,
       }));
+    });
+
+    newSocket.on("onlineUsers", (users) => {
+      setOnlineUsers(users); // 🟢 NEW listener added
     });
 
     newSocket.on("user-typing", ({ username: typingName }) => {
@@ -117,7 +123,7 @@ function ChatApp() {
     formData.append("file", file);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/upload`, {
+      const res = await fetch(`${BACKEND_URL}/upload`, {
         method: "POST",
         body: formData,
       });
@@ -133,13 +139,25 @@ function ChatApp() {
   const handleSend = () => {
     if ((message.trim() || mediaUrl) && socket) {
       socket.emit("chatMessage", {
-        text: message,
+        text: message.trim(),
         to: selectedUser,
         media: mediaUrl,
       });
+
+      // Immediately show it in sender's chat (optimistic UI)
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: username,
+          receiver: selectedUser,
+          message: message.trim(),
+          media: mediaUrl,
+        },
+      ]);
+
       setMessage("");
       setMediaUrl(null);
-      socket.emit("stop-typing", { username });
+      setShowPicker(false);
     }
   };
 
@@ -192,88 +210,100 @@ function ChatApp() {
           ))}
         </div>
 
-        {/* 💬 Chat Area */}
-        <div className="chat-main">
-          {/* 📨 Messages */}
-          <div className="chat-messages">
-            {messages.map((msg, i) => (
-              <div key={i} className="message">
-                {msg.receiver === "all" ? (
-                  <div>
-                    <b>{msg.sender}</b> (Global): {msg.text}
-                  </div>
-                ) : (
-                  <div>
-                    <b>{msg.sender}</b> ➡️ <b>{msg.receiver}</b>: {msg.text}
-                  </div>
-                )}
-
-                <span
-                  className={`status-text ${
-                    userStatus[msg.sender] === "online" ? "online" : "offline"
-                  }`}
-                >
-                  ({userStatus[msg.sender]})
-                </span>
-
-                {/* 📎 Media support */}
-                {msg.media && (
-                  <>
-                    {msg.media.match(/\.(jpg|png)$/) ? (
-                      <img src={msg.media} alt="uploaded" />
-                    ) : msg.media.endsWith(".mp4") ? (
-                      <video controls src={msg.media} />
-                    ) : msg.media.endsWith(".mp3") ? (
-                      <audio controls src={msg.media}></audio>
-                    ) : (
-                      <a href={msg.media} target="_blank" rel="noreferrer">
-                        View File
-                      </a>
-                    )}
-                  </>
-                )}
-              </div>
+        {/* online users */}
+        <div className="online-users">
+          <h4>Online Now</h4>
+          <ul>
+            {Object.keys(onlineUsers).map((name) => (
+              <li key={name}>{name}</li>
             ))}
+          </ul>
+        </div>
 
-            {/* ✍️ Typing status */}
-            {typingUsers.length > 0 && (
-              <div className="typing-indicator">
-                {typingUsers.join(", ")} is typing...
-              </div>
-            )}
-          </div>
+        {/* 💬 Chat Area */}
+        <div className="chat-messages">
+          {messages.map((msg, index) => (
+            <div key={index} className="message">
+              <strong>{msg.sender}</strong>
+              {msg.receiver === "all" ? " (Global) " : ""}:&nbsp;
+              {msg.message && <span>{msg.message}</span>}
+              {/* ✅ Show online/offline status */}
+              <span
+                className={`status-text ${
+                  userStatus[msg.sender] === "online" ? "online" : "offline"
+                }`}
+              >
+                ({userStatus[msg.sender]})
+              </span>
+              {/* 📎 Media support */}
+              {msg.media && (
+                <>
+                  {msg.media.match(/\.(jpg|png)$/) ? (
+                    <img
+                      src={msg.media}
+                      alt="uploaded"
+                      style={{
+                        maxWidth: "200px",
+                        display: "block",
+                        marginTop: "5px",
+                      }}
+                    />
+                  ) : msg.media.endsWith(".mp4") ? (
+                    <video
+                      controls
+                      src={msg.media}
+                      style={{ maxWidth: "200px" }}
+                    />
+                  ) : msg.media.endsWith(".mp3") ? (
+                    <audio controls src={msg.media}></audio>
+                  ) : (
+                    <a href={msg.media} target="_blank" rel="noreferrer">
+                      View File
+                    </a>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
 
-          {/* 🖊️ Input area */}
-          <div className="chat-input">
-            <button onClick={toggleEmojiPicker}>😊</button>
-            {showPicker && (
-              <div className="emoji-picker">
-                <Picker data={data} onEmojiSelect={addEmoji} />
-              </div>
-            )}
+          {/* ✍️ Typing status */}
+          {typingUsers.length > 0 && (
+            <div className="typing-indicator">
+              {typingUsers.join(", ")} is typing...
+            </div>
+          )}
+        </div>
 
-            <input
-              value={message}
-              onChange={handleInputChange}
-              placeholder={`Message to ${selectedUser}`}
-            />
+        {/* 🖊️ Input Area */}
+        <div className="chat-input">
+          <button onClick={toggleEmojiPicker}>😊</button>
+          {showPicker && (
+            <div className="emoji-picker">
+              <Picker data={data} onEmojiSelect={addEmoji} />
+            </div>
+          )}
 
-            <label htmlFor="fileInput" className="upload-button">
-              📎
-            </label>
-            <input
-              type="file"
-              id="fileInput"
-              style={{ display: "none" }}
-              accept="image/*,video/*,audio/*"
-              onChange={handleFileUpload}
-            />
+          <input
+            value={message}
+            onChange={handleInputChange}
+            placeholder={`Message to ${selectedUser}`}
+          />
 
-            <button onClick={handleSend}>Send</button>
-            <button className="logout-button" onClick={handleLogout}>
-              Logout
-            </button>
-          </div>
+          <label htmlFor="fileInput" className="upload-button">
+            📎
+          </label>
+          <input
+            type="file"
+            id="fileInput"
+            style={{ display: "none" }}
+            accept="image/*,video/*,audio/*"
+            onChange={handleFileUpload}
+          />
+
+          <button onClick={handleSend}>Send</button>
+          <button className="logout-button" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </div>
     </div>

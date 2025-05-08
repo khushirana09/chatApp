@@ -109,11 +109,16 @@ io.on("connection", (socket) => {
   const username = socket.user.username;
   console.log("A user connected:", socket.id, "Username:", username);
 
-  // Store user and their socket ID
   users[username] = socket.id;
   userSocketMap[username] = socket.id;
 
-  // Notify about online status
+  // 🟢 NEW: When a user joins, send the list of online users to all
+  socket.on("join", (username) => {
+    userSocketMap[username] = socket.id;
+    io.emit("onlineUsers", Object.keys(userSocketMap));
+  });
+
+  // Online status
   socket.on("user-login", (userId) => {
     usersOnline[username] = true;
     io.emit("user-status", { userId: username, status: "online" });
@@ -131,7 +136,7 @@ io.on("connection", (socket) => {
     io.emit("typing", Object.values(typingUsers));
   });
 
-  // Handle private messages
+  // Private messages
   socket.on("private-message", ({ to, from, message }) => {
     console.log("Private message from", from, "to", to, ":", message);
     const targetSocketId = users[to];
@@ -140,7 +145,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Fetch previous messages from DB
+  // Message history
   socket.on("getMessages", async () => {
     try {
       const messages = await Message.find({});
@@ -150,7 +155,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle chat messages (public/private)
+  // Public and private chat
   socket.on("chatMessage", async ({ text, to, media }) => {
     const message = new Message({
       sender: username,
@@ -168,20 +173,21 @@ io.on("connection", (socket) => {
       media: media || null,
     };
 
-    if (to === "all") {
-      io.emit("chatMessage", payload); // Broadcast
+    if (!to || to === "all") {
+      payload.receiver = "all";
+      io.emit("chatMessage", payload);
     } else {
       if (userSocketMap[to]) {
-        io.to(userSocketMap[to]).emit("chatMessage", payload); // Send to receiver
+        io.to(userSocketMap[to]).emit("chatMessage", payload);
       }
-      socket.emit("chatMessage", payload); // Echo back to sender
+      socket.emit("chatMessage", payload);
     }
   });
 
   // Initial user status
   socket.emit("initial-user-status", usersOnline);
 
-  // Handle disconnection
+  // Handle disconnect
   socket.on("disconnect", () => {
     console.log(`${username} disconnected`);
     usersOnline[username] = false;
@@ -190,6 +196,9 @@ io.on("connection", (socket) => {
     delete users[username];
     delete userSocketMap[username];
     delete typingUsers[socket.id];
+
+    // 🟢 NEW: Update online users after disconnect
+    io.emit("onlineUsers", Object.keys(userSocketMap));
   });
 });
 
