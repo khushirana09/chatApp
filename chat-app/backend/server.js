@@ -106,16 +106,6 @@ io.use((socket, next) => {
 
 // 📡 Handle Socket.IO Connections
 io.on("connection", (socket) => {
-  // typing event
-  socket.on("typing", (username) => {
-    socket.broadcast.emit("user-typing", { username });
-  });
-
-  // stop typing
-  socket.on("stop-typing", ({ username }) => {
-    socket.broadcast.emit("stop-typing", { username });
-  });
-
   const username = socket.user.username;
   console.log("A user connected:", socket.id, "Username:", username);
 
@@ -135,16 +125,15 @@ io.on("connection", (socket) => {
     console.log(`User ${userId} is now online`);
   });
 
-  // Typing events
-  socket.on("typing", (username) => {
-    typingUsers[socket.id] = username;
-    io.emit("typing", Object.values(typingUsers));
+  // typing event
+  socket.on("typing", ({ username }) => {
+    socket.broadcast.emit("user-typing", { username });
   });
-
-  socket.on("stopTyping", () => {
-    delete typingUsers[socket.id];
-    io.emit("typing", Object.values(typingUsers));
+  
+  socket.on("stop-typing", ({ username }) => {
+    socket.broadcast.emit("stop-typing", { username });
   });
+  
 
   // Private messages
   socket.on("private-message", ({ to, from, message }) => {

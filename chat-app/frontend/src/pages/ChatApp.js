@@ -103,7 +103,7 @@ function ChatApp() {
     const text = e.target.value;
     setMessage(text);
     if (text !== "") {
-      socket?.emit("typing", username);
+      socket?.emit("typing", {username});
 
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
