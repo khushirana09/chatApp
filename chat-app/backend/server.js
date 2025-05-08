@@ -106,6 +106,17 @@ io.use((socket, next) => {
 
 // 📡 Handle Socket.IO Connections
 io.on("connection", (socket) => {
+  // typing event
+  socket.on("typing", (username) => {
+    socket.broadcast.emit("user-typing", { username });
+  });
+
+  // stop typing
+  socket.on("stop-typing", ({ username }) => {
+    socket.broadcast.emit("stop-typing" , { username });
+  });
+});
+
   const username = socket.user.username;
   console.log("A user connected:", socket.id, "Username:", username);
 
