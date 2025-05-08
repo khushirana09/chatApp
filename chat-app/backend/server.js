@@ -113,9 +113,8 @@ io.on("connection", (socket) => {
 
   // stop typing
   socket.on("stop-typing", ({ username }) => {
-    socket.broadcast.emit("stop-typing" , { username });
+    socket.broadcast.emit("stop-typing", { username });
   });
-});
 
   const username = socket.user.username;
   console.log("A user connected:", socket.id, "Username:", username);
@@ -211,16 +210,16 @@ io.on("connection", (socket) => {
     // 🟢 NEW: Update online users after disconnect
     io.emit("onlineUsers", Object.keys(userSocketMap));
   });
-});
 
-// 🧠 Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
+  // 🧠 Connect to MongoDB
+  mongoose
+    .connect(process.env.MONGO_URL)
+    .then(() => console.log("✅ MongoDB connected"))
+    .catch((err) => console.error("❌ MongoDB error:", err));
 
-// 🚀 Start server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  // 🚀 Start server
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
 });
