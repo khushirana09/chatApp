@@ -129,11 +129,10 @@ io.on("connection", (socket) => {
   socket.on("typing", ({ username }) => {
     socket.broadcast.emit("user-typing", { username });
   });
-  
+
   socket.on("stop-typing", ({ username }) => {
     socket.broadcast.emit("stop-typing", { username });
   });
-  
 
   // Private messages
   socket.on("private-message", ({ to, from, message }) => {
@@ -199,16 +198,16 @@ io.on("connection", (socket) => {
     // 🟢 NEW: Update online users after disconnect
     io.emit("onlineUsers", Object.keys(userSocketMap));
   });
+});
 
-  // 🧠 Connect to MongoDB
-  mongoose
-    .connect(process.env.MONGO_URL)
-    .then(() => console.log("✅ MongoDB connected"))
-    .catch((err) => console.error("❌ MongoDB error:", err));
+// 🧠 Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URL)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB error:", err));
 
-  // 🚀 Start server
-  const PORT = process.env.PORT || 5000;
-  server.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
+// 🚀 Start server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
