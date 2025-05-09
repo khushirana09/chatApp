@@ -5,6 +5,13 @@ h1 {
   color: #00ffcc;
   font-size: 2em; /* Increase the size a little for better appearance */
 }
+/* Optional: Use Poppins for headings */
+h1,
+h2,
+h3 {
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+}
 div#user-list-container {
   background-color: black;
   color: white;

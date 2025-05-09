@@ -28,9 +28,35 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 // Example route for login
-router.post("/login", (req, res) => {
-  res.json({ message: "User logged in (dummy)" });
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user || user.password !== password) {
+      return re.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      }
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      username: user.username,
+      profilePicture: user.profilePicture || "",   // return profile picture url
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Server error " });
+  }
 });
 
 module.exports = router;

@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { FaCircleUser } from "react-icons/fa6";
+import { FaLock } from "react-icons/fa";
 import "./Login.css";
 
 const Login = () => {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [avatar, setAvatar] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -33,42 +37,60 @@ const Login = () => {
     }
   };
 
+  useEffect(() => {
+    const name = localStorage.getItem("tempName") || "";
+    const profile = localStorage.getItem("tempAvatar") || "../assets/images/avatar.png";
+    setUsername(name);
+    setAvatar(profile);
+  }, []);
+
   return (
     <div className="login-container">
       <div className="logn-content">
-        <h2>Login</h2>
-        <form className="login-form" action="" onSubmit={handleLogin}>
-          <div className="email-input">
-            {" "}
-            <input
-              className="Email-field"
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+        <div className="login-screen">
+          <div className="profile-pic">
+            <img src={avatar} alt="Avatar" width="100" height="100" />
           </div>
-          <div className="password-input">
-            <input
-              className="password"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+          <div className="login-wlcm-msg">
+          <h2>Welcome , {username}</h2></div>
+          <div className="login-form-container">
+          <form className="login-form" action="" onSubmit={handleLogin}>
+            <div className="email-input">
+            <FaCircleUser />
+              <input
+                className="Email-field"
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="password-input">
+            <FaLock />
+              <input
+                className="password"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="submit-btn">
+              Login
+            </button>
+          </form>
           </div>
-          <button type="submit" className="submit-btn">
-            Login
-          </button>
-        </form>
-        <p>
-          No account ?{" "}
-          <Link to="/register" className="register-link">
-            Register
-          </Link>
-        </p>
+          <div className="register-msg">
+          <p>
+            No account ?{" "}
+            <Link to="/register" className="register-link">
+              Register
+            </Link>
+          </p>
+          </div>
+        </div>
       </div>
     </div>
   );

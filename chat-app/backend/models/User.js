@@ -14,7 +14,16 @@ const UserSchema = new mongoose.Schema({
     email:{
         type: String,
         unique: true
-    }
+    },
+    profilePicture:{
+        type: String,
+        default: ""
+    },
+    about:{
+        type: String,
+        default: ""
+    },
+
 });
 
 //export the modal to use in routes

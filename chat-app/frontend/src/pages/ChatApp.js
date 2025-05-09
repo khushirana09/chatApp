@@ -103,7 +103,7 @@ function ChatApp() {
     const text = e.target.value;
     setMessage(text);
     if (text !== "") {
-      socket?.emit("typing", {username});
+      socket?.emit("typing", { username });
 
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
@@ -123,15 +123,22 @@ function ChatApp() {
     formData.append("file", file);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/upload`, {
+      const response = await fetch(`${BACKEND_URL}/upload`, {
         method: "POST",
         body: formData,
       });
 
-      const data = await res.json();
+      const data = await response.json();
       setMediaUrl(data.fileUrl);
+
+      // Send media as a chat message
+      socket?.emit("chatMessage", {
+        text: "",
+        to: selectedUser,
+        media: data.fileUrl,
+      });
     } catch (error) {
-      console.error("File upload failed", error);
+      console.error("File upload error:", error);
     }
   };
 
