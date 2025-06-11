@@ -57,7 +57,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
 // Allowed frontend origins (Vercel + localhost)
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://chat-app-bay-chi.vercel.app/",
+  "https://chat-app-bay-chi.vercel.app",
 ];
 
 
