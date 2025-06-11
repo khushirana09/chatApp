@@ -6,7 +6,7 @@ import Picker from "@emoji-mart/react";
 
 function ChatApp() {
   const navigate = useNavigate();
-  const BACKEND_URL = "https://chat-app-mgo9.onrender.com";
+  const BACKEND_URL = "https://chatapp-7ybi.onrender.com";
 
   // 🔧 State setup
   const [socket, setSocket] = useState(null);

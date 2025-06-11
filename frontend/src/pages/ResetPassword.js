@@ -17,7 +17,7 @@ const ResetPassword = () => {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "https://chat-app-mgo9.onrender.com/api/auth/reset-password",
+        "https://chatapp-7ybi.onrender.com/api/auth/reset-password",
         {
           email,
           token,

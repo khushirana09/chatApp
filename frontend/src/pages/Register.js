@@ -53,7 +53,7 @@ const Register = () => {
 
     try {
       const response = await fetch(
-        `https://chat-app-mgo9.onrender.com/api/auth/register`,
+        `https://chatapp-7ybi.onrender.com/api/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

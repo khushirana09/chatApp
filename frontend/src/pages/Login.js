@@ -17,7 +17,7 @@ const Login = () => {
 
     //send request to backend
     const response = await fetch(
-      `https://chat-app-mgo9.onrender.com/api/auth/login`,
+      `https://chatapp-7ybi.onrender.com/api/auth/login`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

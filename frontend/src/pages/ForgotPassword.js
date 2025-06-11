@@ -8,7 +8,7 @@ const ForgotPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("https://chat-app-mgo9.onrender.com/api/auth/forgot-password", {
+      const res = await axios.post("https://chatapp-7ybi.onrender.com/api/auth/forgot-password", {
         email,
       });
       setMessage(res.data.message);
