@@ -1,0 +1,6 @@
+# Don't push sensitive or unnecessary files
+.env
+node_modules/
+.DS_Store
+logs
+npm-debug.log*
