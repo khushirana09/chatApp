@@ -60,6 +60,7 @@ const allowedOrigins = [
   "https://chat-app-bay-chi.vercel.app/",
 ];
 
+
 // Express CORS Options
 const corsOptions = {
   origin: function (origin, callback) {
