@@ -5,22 +5,22 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.4); /* semi-transparent */
+  background: rgba(0, 0, 0, 0.7); /* dark background */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
 }
 
-/* Spinner Animation */
+/* Spinner */
 .spinner {
-  width: 50px;
-  height: 50px;
-  border: 6px solid #ccc;
-  border-top: 6px solid #4caf50;
+  width: 48px;
+  height: 48px;
+  border: 5px solid #999;
+  border-top: 5px solid #4caf50;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: auto;
+  margin: 0 auto 1rem;
 }
 
 @keyframes spin {
@@ -29,16 +29,28 @@
   }
 }
 
-/* Message Text */
+/* Message */
 .loader-message {
-  text-align: center;
   color: #fff;
-  font-size: 1.2rem;
-  font-weight: bold;
-  backdrop-filter: blur(4px); /* makes text pop */
+  font-size: 1.1rem;
+  text-align: center;
+  margin-top: 1rem;
+  opacity: 0.9;
+}
+
+.loader-message.fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .loader-box {
+  background: #222;
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: 14px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+  text-align: center;
 }

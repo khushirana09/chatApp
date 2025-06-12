@@ -6,12 +6,13 @@ const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false); //new state
-  const [error, setError] = useState(""); //New
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
   const [tip, setTip] = useState("");
-  const [messageIndex, setMessageIndex] = useState(0);
+  const navigate = useNavigate();
+
   const messages = [
     "💧 Drink some water!",
     "🌿 Take a deep breath.",
@@ -21,35 +22,22 @@ const Register = () => {
     "😄 Smile a little!",
   ];
 
-  //change tip every few seconds
   useEffect(() => {
-    let indexInterval;
     let tipInterval;
-
     if (loading) {
       setTip(messages[Math.floor(Math.random() * messages.length)]);
-
-      indexInterval = setInterval(() => {
-        setMessageIndex((prevIndex) => (prevIndex + 1) % messages.length);
-      }, 3000);
-
       tipInterval = setInterval(() => {
         setTip(messages[Math.floor(Math.random() * messages.length)]);
       }, 3000);
     }
-
-    return () => {
-      clearInterval(indexInterval);
-      clearInterval(tipInterval);
-    };
+    return () => clearInterval(tipInterval);
   }, [loading]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setTip(messages[Math.floor(Math.random() * messages.length)]);
     setLoading(true);
-    setError(""); // clear previous error
-    setSuccess(false); // clear previous success
+    setError("");
+    setSuccess(false);
 
     try {
       const response = await fetch(
@@ -64,24 +52,25 @@ const Register = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(true); // show success overlay
+        setSuccess(true);
         setTimeout(() => {
           navigate("/login");
-        }, 3000); // wait 3 seconds before redirecting
+        }, 3000);
       } else {
-        setLoading(false); // 💥 FIXED: stop spinner on error
+        setLoading(false);
         setError(data.message || "Registration failed.");
       }
-    } catch (error) {
+    } catch (err) {
       setLoading(false);
       setError("Server error. Please try again later.");
-      console.error("Error during registration:", error);
+      console.error("Error during registration:", err);
     }
   };
 
   return (
     <div style={{ position: "relative" }}>
-      {loading && (
+      {/* ✅ Loading Overlay */}
+      {loading && !success && !error && (
         <div className="loader-overlay">
           <div className="loader-box">
             <div className="spinner"></div>
@@ -90,7 +79,7 @@ const Register = () => {
         </div>
       )}
 
-      {/* success message overlay */}
+      {/* ✅ Success Overlay */}
       {success && (
         <div className="loader-overlay">
           <div className="loader-box">
@@ -99,22 +88,13 @@ const Register = () => {
         </div>
       )}
 
-      {/* error message only */}
+      {/* ✅ Error Overlay */}
       {error && (
         <div className="loader-overlay" onClick={() => setError("")}>
           <div className="loader-box">
             <div className="loader-message" style={{ color: "red" }}>
               ❌ {error}
             </div>
-          </div>
-        </div>
-      )}
-
-      {loading && !success && !error && (
-        <div className="loader-overlay">
-          <div className="loader-box">
-            <div className="spinner"></div>
-            <div className="loader-message">{messages[messageIndex]}</div>
           </div>
         </div>
       )}
