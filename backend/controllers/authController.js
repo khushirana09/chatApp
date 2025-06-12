@@ -28,12 +28,20 @@ const forgotPassword = async (req, res) => {
         ? process.env.CLIENT_URL_PROD
         : process.env.CLIENT_URL_LOCAL;
 
+    if (!CLIENT_URL) {
+      console.error(
+        "CLIENT_URL is undefined. Check .env or environment settings."
+      );
+    }
+
     console.log("NODE_ENV:", process.env.NODE_ENV);
     console.log("CLIENT_URL_PROD:", process.env.CLIENT_URL_PROD);
     console.log("CLIENT_URL_LOCAL:", process.env.CLIENT_URL_LOCAL);
     console.log("CLIENT_URL resolved to:", CLIENT_URL);
 
     const resetUrl = `${CLIENT_URL}/reset-password?token=${resetToken}&email=${email}`;
+    console.log("Reset URL:", resetUrl);
+
 
     const transporter = nodemailer.createTransport({
       service: "gmail",

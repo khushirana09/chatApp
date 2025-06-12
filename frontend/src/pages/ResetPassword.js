@@ -4,13 +4,11 @@ import axios from "axios";
 const ResetPassword = () => {
   const [message, setMessage] = useState("");
   const [token, setToken] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     setToken(urlParams.get("token"));
-    setEmail(urlParams.get("email"));
   }, []);
 
   const handleSubmit = async (e) => {
@@ -19,7 +17,6 @@ const ResetPassword = () => {
       const res = await axios.post(
         "https://chatapp-7ybi.onrender.com/api/auth/reset-password",
         {
-          email,
           token,
           password, // backend expects: email, token, password
         }
