@@ -18,7 +18,7 @@ const ResetPassword = () => {
         "https://chatapp-7ybi.onrender.com/api/auth/reset-password",
         {
           token,
-          password, // backend expects: email, token, password
+         newPassword: password, // backend expects: email, token, password
         }
       );
       setMessage(res.data.message);
