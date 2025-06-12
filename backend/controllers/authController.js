@@ -25,7 +25,7 @@ const forgotPassword = async (req, res) => {
     const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
 
     const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -33,7 +33,8 @@ const forgotPassword = async (req, res) => {
     });
 
     await transporter.sendMail({
-      to: email,
+      from: process.env.EMAIL_USER,
+      to: user.email,
       subject: "Password Reset",
       html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link is valid for 15 minutes.</p>`,
     });
