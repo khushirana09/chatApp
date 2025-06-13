@@ -81,7 +81,7 @@ app.use(express.json()); // Parse incoming JSON
 
 // Register Routes
 app.use("/api/auth", userRoutes);
-app.use("/api/users", userRoute);
+app.use("/api/users", require("./routes/userRoutes"));
 
 //base route test
 app.get("/", (req, res) => {
