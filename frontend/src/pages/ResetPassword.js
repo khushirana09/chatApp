@@ -23,23 +23,28 @@ const ResetPassword = () => {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    setToken(urlParams.get("token"));
+    const tokenFromURL = urlParams.get("token");
+
+    if (!tokenFromURL) {
+      setError("❌ Invalid or missing reset token.");
+      return;
+    }
+    setToken(tokenFromURL);
   }, []);
 
- useEffect(() => {
-  let tipInterval;
+  useEffect(() => {
+    let tipInterval;
 
-  if (loading && !success && !error) {
-    setMessageIndex(0); // Start from first tip
+    if (loading && !success && !error) {
+      setMessageIndex(0); // Start from first tip
 
-    tipInterval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % messages.length);
-    }, 3000);
-  }
+      tipInterval = setInterval(() => {
+        setMessageIndex((prev) => (prev + 1) % messages.length);
+      }, 3000);
+    }
 
-  return () => clearInterval(tipInterval);
-}, [loading, success, error]);
-
+    return () => clearInterval(tipInterval);
+  }, [loading, success, error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,7 +91,9 @@ const ResetPassword = () => {
         <div className="loader-overlay">
           <div className="loader-box">
             <div className="spinner"></div>
-           <div className="loader-message fade-in">{messages[messageIndex]}</div>
+            <div className="loader-message fade-in">
+              {messages[messageIndex]}
+            </div>
           </div>
         </div>
       )}

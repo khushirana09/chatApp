@@ -39,7 +39,7 @@ const forgotPassword = async (req, res) => {
     console.log("CLIENT_URL_LOCAL:", process.env.CLIENT_URL_LOCAL);
     console.log("CLIENT_URL resolved to:", CLIENT_URL);
 
-    const resetUrl = `${CLIENT_URL}/reset-password?token=${resetToken}&email=${email}`;
+    const resetUrl = `${CLIENT_URL}/reset-password?token=${resetToken}`;
     console.log("Reset URL:", resetUrl);
 
 
