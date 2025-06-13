@@ -43,6 +43,7 @@ function ChatApp() {
     fetch(`${BACKEND_URL}/api/users/all`)
       .then((res) => res.json())
       .then((data) => {
+        console.log("Fetched users:", data);
         const filtered = data.filter((u) => u.username !== storedName);
         setUsers(filtered);
       });
@@ -150,7 +151,7 @@ function ChatApp() {
         to: selectedUser,
         media: mediaUrl,
       });
-      
+
       setMessage("");
       setMediaUrl(null);
       setShowPicker(false);
