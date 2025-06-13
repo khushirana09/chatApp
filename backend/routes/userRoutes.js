@@ -5,6 +5,23 @@ const User = require("../models/User");
 
 const router = express.Router();
 
+//userlist
+router.get("/all", async (req, res) => {
+  try {
+    const currentUsername = req.query.currentUsername;
+
+    const users = await User.find(
+      { username: { $ne: currentUsername } }, // exclude current
+      "username profilePicture email"
+    );
+
+    res.status(200).json(users);
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ message: "Failed to fetch users" });
+  }
+});
+
 // Register Route
 router.post("/register", async (req, res) => {
   try {
@@ -34,7 +51,12 @@ router.post("/register", async (req, res) => {
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
-    res.status(201).json({ message: "User registered successfully", username: newUser.username });
+    res
+      .status(201)
+      .json({
+        message: "User registered successfully",
+        username: newUser.username,
+      });
   } catch (err) {
     console.error("Register Error:", err);
     res.status(500).json({ message: "Server error" });
@@ -48,7 +70,9 @@ router.post("/login", async (req, res) => {
 
     // Check if email and password are provided
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
 
     // Find user by email
@@ -57,7 +81,8 @@ router.post("/login", async (req, res) => {
 
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(401).json({ message: "Invalid credentials" });
 
     // Generate JWT
     const token = jwt.sign(

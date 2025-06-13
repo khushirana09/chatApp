@@ -40,7 +40,7 @@ function ChatApp() {
     newSocket.emit("user-login", storedName);
     newSocket.emit("join", storedName); // 🟢 new emit for tracking online users
 
-    fetch(`${BACKEND_URL}/api/users/all`)
+    fetch(`${BACKEND_URL}/api/users/all?currentUsername=${storedName}`)
       .then((res) => res.json())
       .then((data) => {
         console.log("Fetched users:", data);
