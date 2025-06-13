@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { FaCircleUser } from "react-icons/fa6";
 import { FaLock } from "react-icons/fa";
 import "../styles/Login.css";
- 
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -11,11 +11,11 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [avatar, setAvatar] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    //send request to backend
     const response = await fetch(
       `https://chatapp-7ybi.onrender.com/api/auth/login`,
       {
@@ -28,10 +28,13 @@ const Login = () => {
     const data = await response.json();
 
     if (response.ok) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", data.username);
-      console.log(localStorage.getItem("token"));
-      console.log(localStorage.getItem("username"));
+      const userData = {
+        token: data.token,
+        username: data.username,
+        avatar: localStorage.getItem("tempAvatar") || "../assets/images/avatar.png",
+      };
+
+      login(userData);
       navigate("/chat");
     } else {
       alert(data.message || "Login failed");
@@ -53,46 +56,47 @@ const Login = () => {
             <img src={avatar} alt="Avatar" width="100" height="100" />
           </div>
           <div className="login-wlcm-msg">
-          <h2>Welcome , {username}</h2></div>
+            <h2>Welcome , {username}</h2>
+          </div>
           <div className="login-form-container">
-          <form className="login-form" action="" onSubmit={handleLogin}>
-            <div className="email-input">
-            <FaCircleUser />
-              <input
-                className="Email-field"
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="password-input">
-            <FaLock />
-              <input
-                className="password"
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit" className="submit-btn">
-              Login
-            </button>
-            <p>
-              <Link to ="/forgot-password">Forgot Password?</Link>
-            </p>
-          </form>
+            <form className="login-form" action="" onSubmit={handleLogin}>
+              <div className="email-input">
+                <FaCircleUser />
+                <input
+                  className="Email-field"
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="password-input">
+                <FaLock />
+                <input
+                  className="password"
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button type="submit" className="submit-btn">
+                Login
+              </button>
+              <p>
+                <Link to="/forgot-password">Forgot Password?</Link>
+              </p>
+            </form>
           </div>
           <div className="register-msg">
-          <p>
-            No account ?{" "}
-            <Link to="/register" className="register-link">
-              Register
-            </Link>
-          </p>
+            <p>
+              No account?{" "}
+              <Link to="/register" className="register-link">
+                Register
+              </Link>
+            </p>
           </div>
         </div>
       </div>

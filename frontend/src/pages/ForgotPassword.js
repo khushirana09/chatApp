@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // ✅ import useEffect
 import axios from "axios";
-import "../styles/Register.css"; // ✅ Reusing loader styles
+import "../styles/Register.css";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -27,6 +27,16 @@ const ForgotPassword = () => {
     }
   };
 
+  // ✅ Auto-clear success message after 4 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage("");
+      }, 4000);
+      return () => clearTimeout(timer); // Cleanup on unmount or re-run
+    }
+  }, [message]);
+
   return (
     <div style={{ position: "relative" }}>
       {/* Loader overlay */}
@@ -50,9 +60,9 @@ const ForgotPassword = () => {
         </div>
       )}
 
-      {/* Success message */}
+      {/* Success message - disappears automatically */}
       {message && !error && (
-        <div className="loader-overlay" onClick={() => setMessage("")}>
+        <div className="loader-overlay">
           <div className="loader-box">
             <div className="loader-message">✅ {message}</div>
           </div>
