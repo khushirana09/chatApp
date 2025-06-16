@@ -180,6 +180,16 @@ function ChatApp() {
     }
   };
 
+  //-------------------deleteMessage-------------------
+  const handleDeleteMessages = () => {
+    if (socket && selectedMessages.length > 0) {
+      socket.emit("deleteMessages", { ids: selectedMessages });
+
+      // Optional: clear selection immediately
+      setSelectedMessages([]);
+    }
+  };
+
   // ------------------handlesend---------------------
   const handleSend = () => {
     if ((message.trim() || mediaUrl) && socket) {
@@ -274,11 +284,10 @@ function ChatApp() {
 
         {/* Messages */}
         <div className="chat-messages">
-          {messages.map((msg ,index) => {
+          {messages.map((msg, index) => {
             const id = msg._id || msg.id || `local-${index}`;
-            return(
-         
-            <div key={id} className="message">
+            return (
+              <div key={id} className="message">
                 <input
                   type="checkbox"
                   checked={selectedMessages.includes(id)}
@@ -290,47 +299,46 @@ function ChatApp() {
                     );
                   }}
                 />
-             
-              <strong>{msg.sender}</strong>
-              {msg.receiver === "all" ? " (Global)" : ""}:&nbsp;
-              {msg.message && <span>{msg.message}</span>}
-              <span
-                className={`status-text ${
-                  userStatus[msg.sender] === "online" ? "online" : "offline"
-                }`}
-              >
-                ({userStatus[msg.sender]})
-              </span>
-              {msg.media && (
-                <>
-                  {msg.mediaType === "image" ? (
-                    <img
-                      src={msg.media}
-                      alt="uploaded"
-                      style={{
-                        maxWidth: "200px",
-                        display: "block",
-                        marginTop: "5px",
-                      }}
-                    />
-                  ) : msg.mediaType === "video" ? (
-                    <video
-                      controls
-                      src={msg.media}
-                      style={{ maxWidth: "200px" }}
-                    />
-                  ) : msg.mediaType === "audio" ? (
-                    <audio controls src={msg.media}></audio>
-                  ) : (
-                    <a href={msg.media} target="_blank" rel="noreferrer">
-                      View File
-                    </a>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })}
+                <strong>{msg.sender}</strong>
+                {msg.receiver === "all" ? " (Global)" : ""}:&nbsp;
+                {msg.message && <span>{msg.message}</span>}
+                <span
+                  className={`status-text ${
+                    userStatus[msg.sender] === "online" ? "online" : "offline"
+                  }`}
+                >
+                  ({userStatus[msg.sender]})
+                </span>
+                {msg.media && (
+                  <>
+                    {msg.mediaType === "image" ? (
+                      <img
+                        src={msg.media}
+                        alt="uploaded"
+                        style={{
+                          maxWidth: "200px",
+                          display: "block",
+                          marginTop: "5px",
+                        }}
+                      />
+                    ) : msg.mediaType === "video" ? (
+                      <video
+                        controls
+                        src={msg.media}
+                        style={{ maxWidth: "200px" }}
+                      />
+                    ) : msg.mediaType === "audio" ? (
+                      <audio controls src={msg.media}></audio>
+                    ) : (
+                      <a href={msg.media} target="_blank" rel="noreferrer">
+                        View File
+                      </a>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
 
           {typingUsers.length > 0 && (
             <div className="typing-indicator">
@@ -357,7 +365,9 @@ function ChatApp() {
                 }
               }}
             >
-              🗑️ Delete Selected ({selectedMessages.length})
+              {selectedMessages.length > 0 && (
+                <button onClick={handleDeleteMessages}>🗑️ Delete</button>
+              )}
             </button>
           )}
         </div>

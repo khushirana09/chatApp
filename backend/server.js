@@ -98,20 +98,12 @@ io.on("connection", (socket) => {
   });
 
   // 🔥 Delete a message by ID
-  socket.on("deleteMessage", async ({ messageId }) => {
+  socket.on("deleteMessages", async ({ ids }) => {
     try {
-      // Remove message from DB
-      const deleted = await Message.findByIdAndDelete(messageId);
-      if (deleted) {
-        console.log(`🗑️ Message ${messageId} deleted`);
-
-        // Notify the sender and receiver to remove the message from UI
-        io.emit("messageDeleted", { messageId });
-      } else {
-        console.log(`⚠️ Message ${messageId} not found`);
-      }
-    } catch (error) {
-      console.error("❌ Error deleting message:", error);
+      await Message.deleteMany({ _id: { $in: ids } }); //delete from db
+      io.emit("messageDeleted", { ids }); //notify all clients
+    } catch (err) {
+      console.error("Failed to delete messages:", err);
     }
   });
 
