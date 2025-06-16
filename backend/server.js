@@ -153,30 +153,32 @@ io.on("connection", (socket) => {
   // Public and private chat
   socket.on("chatMessage", async (msg) => {
     try {
+      const { sender, receiver, message, media, mediaType } = msg;
       const newMessage = new Message({
-        message: msg.message,
-        sender: msg.sender,
-        receiver: msg.receiver,
-        media: msg.media,
-        mediaType: msg.mediaType,
+        message,
+        sender,
+        receiver,
+        media,
+        mediaType,
       });
-
       await newMessage.save();
 
-      io.emit("chatMessage", newMessage)
+      io.emit("chatMessage", newMessage);
 
       const payload = {
         sender: username,
-        receiver: to,
+        receiver: receiver || "all",
+        message,
         media: media || null,
       };
 
-      if (!to || to === "all") {
+      if (!receiver || receiver === "all") {
         payload.receiver = "all";
         io.emit("chatMessage", payload);
       } else {
-        if (userSocketMap[to]) {
-          io.to(userSocketMap[to]).emit("chatMessage", payload);
+        const targetSocketId = userSocketMap[receiver];
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("chatMessage", payload);
         }
         socket.emit("chatMessage", payload);
       }
