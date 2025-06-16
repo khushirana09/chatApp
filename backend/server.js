@@ -154,6 +154,7 @@ io.on("connection", (socket) => {
   socket.on("chatMessage", async (msg) => {
     try {
       const { sender, receiver, message, media, mediaType } = msg;
+
       const newMessage = new Message({
         message,
         sender,
@@ -161,26 +162,26 @@ io.on("connection", (socket) => {
         media,
         mediaType,
       });
+
       await newMessage.save();
 
-      io.emit("chatMessage", newMessage);
-
       const payload = {
-        sender: username,
+        sender,
         receiver: receiver || "all",
         message,
         media: media || null,
       };
 
       if (!receiver || receiver === "all") {
-        payload.receiver = "all";
+        // Public message
         io.emit("chatMessage", payload);
       } else {
+        // Private message
         const targetSocketId = userSocketMap[receiver];
         if (targetSocketId) {
           io.to(targetSocketId).emit("chatMessage", payload);
         }
-        socket.emit("chatMessage", payload);
+        socket.emit("chatMessage", payload); // Echo back to sender
       }
     } catch (err) {
       console.error("❌ Failed to save message:", err);
