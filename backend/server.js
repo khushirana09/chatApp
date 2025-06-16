@@ -157,7 +157,6 @@ io.on("connection", (socket) => {
         message: msg.message,
         sender: msg.sender,
         receiver: msg.receiver,
-        message: text,
         media: msg.media,
         mediaType: msg.mediaType,
       });
@@ -169,7 +168,6 @@ io.on("connection", (socket) => {
       const payload = {
         sender: username,
         receiver: to,
-        message: text,
         media: media || null,
       };
 
