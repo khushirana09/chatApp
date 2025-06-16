@@ -97,6 +97,24 @@ io.on("connection", (socket) => {
     io.emit("onlineUsers", Object.keys(userSocketMap));
   });
 
+  // 🔥 Delete a message by ID
+  socket.on("deleteMessage", async ({ messageId }) => {
+    try {
+      // Remove message from DB
+      const deleted = await Message.findByIdAndDelete(messageId);
+      if (deleted) {
+        console.log(`🗑️ Message ${messageId} deleted`);
+
+        // Notify the sender and receiver to remove the message from UI
+        io.emit("messageDeleted", { messageId });
+      } else {
+        console.log(`⚠️ Message ${messageId} not found`);
+      }
+    } catch (error) {
+      console.error("❌ Error deleting message:", error);
+    }
+  });
+
   // Online status
   socket.on("user-login", (userId) => {
     usersOnline[username] = true;
@@ -133,31 +151,39 @@ io.on("connection", (socket) => {
   });
 
   // Public and private chat
-  socket.on("chatMessage", async ({ text, to, media }) => {
-    const message = new Message({
-      sender: username,
-      receiver: to,
-      message: text,
-      media: media || null,
-    });
+  socket.on("chatMessage", async (msg) => {
+    try {
+      const newMessage = new MessageModel({
+        message: msg.message,
+        sender: msg.sender,
+        receiver: msg.receiver,
+        message: text,
+        media: msg.media,
+        mediaType: msg.mediaType,
+      });
 
-    await message.save();
+      await newMessage.save();
 
-    const payload = {
-      sender: username,
-      receiver: to,
-      message: text,
-      media: media || null,
-    };
+      io.emit("chatMessage", newMessage);
 
-    if (!to || to === "all") {
-      payload.receiver = "all";
-      io.emit("chatMessage", payload);
-    } else {
-      if (userSocketMap[to]) {
-        io.to(userSocketMap[to]).emit("chatMessage", payload);
+      const payload = {
+        sender: username,
+        receiver: to,
+        message: text,
+        media: media || null,
+      };
+
+      if (!to || to === "all") {
+        payload.receiver = "all";
+        io.emit("chatMessage", payload);
+      } else {
+        if (userSocketMap[to]) {
+          io.to(userSocketMap[to]).emit("chatMessage", payload);
+        }
+        socket.emit("chatMessage", payload);
       }
-      socket.emit("chatMessage", payload);
+    } catch (err) {
+      console.error("❌ Failed to save message:", err);
     }
   });
 
@@ -173,24 +199,6 @@ io.on("connection", (socket) => {
     delete users[username];
     delete userSocketMap[username];
     delete typingUsers[socket.id];
-
-    // 🔥 Delete a message by ID
-    socket.on("deleteMessage", async ({ messageId }) => {
-      try {
-        // Remove message from DB
-        const deleted = await Message.findByIdAndDelete(messageId);
-        if (deleted) {
-          console.log(`🗑️ Message ${messageId} deleted`);
-
-          // Notify the sender and receiver to remove the message from UI
-          io.emit("messageDeleted", { messageId });
-        } else {
-          console.log(`⚠️ Message ${messageId} not found`);
-        }
-      } catch (error) {
-        console.error("❌ Error deleting message:", error);
-      }
-    });
 
     // 🟢 NEW: Update online users after disconnect
     io.emit("onlineUsers", Object.keys(userSocketMap));

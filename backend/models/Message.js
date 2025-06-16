@@ -7,6 +7,7 @@ const messageSchema = new mongoose.Schema({
   message: { type: String, required: true }, // The message text
   timestamp: { type: Date, default: Date.now }, // When it was sent (default = now)
   media: { type: String, default: null }, // for media
+  createdAt: { type: Date, default: Date.now },
 });
 
 // Create a message model
