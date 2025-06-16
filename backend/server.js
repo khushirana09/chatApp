@@ -6,7 +6,7 @@ const cors = require("cors");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
-const multer = require("multer");
+const uploadRoute = require("./routes/upload");
 
 // Route & Model Imports
 const userRoutes = require("./routes/auth");
@@ -26,40 +26,13 @@ const usersOnline = {};
 const users = {};
 const userSocketMap = {};
 
-// Serve uploaded media
-app.use("/uploads", express.static("uploads"));
-
-// Multer Setup for File Uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Make sure 'uploads' folder exists
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
-
-// ✅ File Upload API
-app.post("/upload", upload.single("file"), (req, res) => {
-  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${
-    req.file.filename
-  }`;
-  console.log("File uploaded:", req.file.filename);
-  res.status(200).json({
-    message: "File uploaded",
-    filename: req.file.filename,
-    fileUrl,
-  });
-});
+app.use("/api/upload", uploadRoute); //cloudinary upload route
 
 // Allowed frontend origins (Vercel + localhost)
 const allowedOrigins = [
   "http://localhost:3000",
   "https://chat-app-bay-chi.vercel.app",
 ];
-
 
 // Express CORS Options
 const corsOptions = {
@@ -200,6 +173,24 @@ io.on("connection", (socket) => {
     delete users[username];
     delete userSocketMap[username];
     delete typingUsers[socket.id];
+
+    // 🔥 Delete a message by ID
+    socket.on("deleteMessage", async ({ messageId }) => {
+      try {
+        // Remove message from DB
+        const deleted = await Message.findByIdAndDelete(messageId);
+        if (deleted) {
+          console.log(`🗑️ Message ${messageId} deleted`);
+
+          // Notify the sender and receiver to remove the message from UI
+          io.emit("messageDeleted", { messageId });
+        } else {
+          console.log(`⚠️ Message ${messageId} not found`);
+        }
+      } catch (error) {
+        console.error("❌ Error deleting message:", error);
+      }
+    });
 
     // 🟢 NEW: Update online users after disconnect
     io.emit("onlineUsers", Object.keys(userSocketMap));
