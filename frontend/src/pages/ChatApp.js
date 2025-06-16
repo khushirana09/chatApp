@@ -119,6 +119,16 @@ function ChatApp() {
     }
   }, [socket, username, selectedUser]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("messagesDeleted", ({ ids }) => {
+      setAllMessages((prev) => prev.filter((msg) => !ids.includes(msg._id)));
+    });
+
+    return () => socket.off("messagesDeleted");
+  }, [socket]);
+
   //----------------------inptchange-----------------------
   const handleInputChange = (e) => {
     const text = e.target.value;
@@ -264,21 +274,23 @@ function ChatApp() {
 
         {/* Messages */}
         <div className="chat-messages">
-          {messages.map((msg) => (
-            <div key={msg._id} className="message">
-              {msg._id && (
+          {messages.map((msg ,index) => {
+            const id = msg._id || msg.id || `local-${index}`;
+            return(
+         
+            <div key={id} className="message">
                 <input
                   type="checkbox"
-                  checked={selectedMessages.includes(msg._id)}
+                  checked={selectedMessages.includes(id)}
                   onChange={() => {
                     setSelectedMessages((prev) =>
-                      prev.includes(msg._id)
-                        ? prev.filter((id) => id !== msg._id)
-                        : [...prev, msg._id]
+                      prev.includes(id)
+                        ? prev.filter((msgId) => msgId !== id)
+                        : [...prev, id]
                     );
                   }}
                 />
-              )}
+             
               <strong>{msg.sender}</strong>
               {msg.receiver === "all" ? " (Global)" : ""}:&nbsp;
               {msg.message && <span>{msg.message}</span>}
@@ -317,7 +329,8 @@ function ChatApp() {
                 </>
               )}
             </div>
-          ))}
+          );
+        })}
 
           {typingUsers.length > 0 && (
             <div className="typing-indicator">
@@ -339,8 +352,9 @@ function ChatApp() {
                     ids: selectedMessages,
                     sender: username,
                   });
+
+                  setSelectedMessages([]);
                 }
-                setSelectedMessages([]);
               }}
             >
               🗑️ Delete Selected ({selectedMessages.length})
