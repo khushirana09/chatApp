@@ -153,7 +153,7 @@ io.on("connection", (socket) => {
   // Public and private chat
   socket.on("chatMessage", async (msg) => {
     try {
-      const newMessage = new MessageModel({
+      const newMessage = new Message({
         message: msg.message,
         sender: msg.sender,
         receiver: msg.receiver,
@@ -164,7 +164,7 @@ io.on("connection", (socket) => {
 
       await newMessage.save();
 
-      io.emit("chatMessage", newMessage);
+      io.emit("chatMessage", newMessage)
 
       const payload = {
         sender: username,
